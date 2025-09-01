@@ -38,3 +38,8 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
+
+// vbe.c
+int vbe_init(void);
+int vbe_disable(void);
+int vbe_putpixel(int x, int y, int color);

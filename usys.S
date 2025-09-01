@@ -29,3 +29,7 @@ SYSCALL(getpid)
 SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
+
+SYSCALL(vbe_init)
+SYSCALL(vbe_disable)
+SYSCALL(vbe_putpixel)

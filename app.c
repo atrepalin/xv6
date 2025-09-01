@@ -2,39 +2,60 @@
 #include "stat.h"
 #include "user.h"
 
-// Add this to Makefile's Extra and uprogs
+int area(int x1, int y1, int x2, int y2, int x3, int y3) {
+    int a = x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2);
+    return a < 0 ? -a : a;
+}
 
-int main()
-{
-    char a = '\0';
-    int b = 0;
-    int c = 0;
-    int d = 0;
-    int e = 0;
-    char *r = "";
+int main() {
+    vbe_init();
 
-    printf(1, "Enter a number : ");
-    scanf(0, "%d", &b);
-    printf(1, "\nEnter a hexadecimal number : ");
-    scanf(0, "%x", &c);
-    printf(1, "\nEnter an octal number : ");
-    scanf(0, "%o", &d);
-    printf(1, "\nEnter any number : ");
-    scanf(0, "%i", &e);
-    printf(1, "\nEnter a character : ");
-    scanf(0, "%c", &a);
-    printf(1, "\nEnter a string : ");
-    scanf(0, "%s", r);
+    int x1 = 100, y1 = 100;
+    int x2 = 150, y2 = 50;
+    int x3 = 200, y3 = 150;
 
-    printf(1, "\nYou Entered");
-    printf(1, "\nDecimal Integer : %d", b);
-    printf(1, "\nHexadecimal Number, with decimal value : %p", c);
-    printf(1, "\nOctal Number, with decimal value : %d", d);
-    printf(1, "\nInteger with decimal value : %d", e);
-    printf(1, "\nCharacter : %c", a);
-    printf(1, "\nString : %s", r);
+    int minX = x1 < x2 ? (x1 < x3 ? x1 : x3) : (x2 < x3 ? x2 : x3);
+    int maxX = x1 > x2 ? (x1 > x3 ? x1 : x3) : (x2 > x3 ? x2 : x3);
+    int minY = y1 < y2 ? (y1 < y3 ? y1 : y3) : (y2 < y3 ? y2 : y3);
+    int maxY = y1 > y2 ? (y1 > y3 ? y1 : y3) : (y2 > y3 ? y2 : y3);
 
-    printf(1, "\n");
+    for(int x = minX; x <= maxX; x++) {
+        for(int y = minY; y <= maxY; y++) {
+            int A = area(x1, y1, x2, y2, x3, y3);
+            int A1 = area(x, y, x2, y2, x3, y3);
+            int A2 = area(x1, y1, x, y, x3, y3);
+            int A3 = area(x1, y1, x2, y2, x, y);
+            if(A == A1 + A2 + A3) {
+                vbe_putpixel(x, y, 0xFF0000);
+            }
+        }
+    }
 
+    int cx = 350;
+    int cy = 250;
+    int r = 50;
+
+    for(int x = cx - r; x <= cx + r; x++) {
+        for(int y = cy - r; y <= cy + r; y++) {
+            int dx = x - cx;
+            int dy = y - cy;
+            if(dx * dx + dy * dy <= r * r) {
+                vbe_putpixel(x, y, 0x00FF00);
+            }
+        }
+    }
+
+    for(int i = 500; i < 700; i++) { 
+        for(int j = 400; j < 500; j++) {
+            vbe_putpixel(i, j, 0x0000FF); 
+        } 
+    }
+
+    char c;
+    while(read(0, &c, 1) == 1) {
+        if(c == '\n') break;
+    }
+
+    vbe_disable();
     exit();
 }

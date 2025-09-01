@@ -6,6 +6,7 @@
 #include "mmu.h"
 #include "proc.h"
 #include "elf.h"
+#include "vbe.h"
 
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
@@ -112,6 +113,7 @@ static struct kmap {
  { (void*)KERNLINK, V2P(KERNLINK), V2P(data), 0},     // kern text+rodata
  { (void*)data,     V2P(data),     PHYSTOP,   PTE_W}, // kern data+memory
  { (void*)DEVSPACE, DEVSPACE,      0,         PTE_W}, // more devices
+ { (void*)FB_VA,    FB_VA,         FB_VA + FB_SIZE,   PTE_P | PTE_W}, // framebuffer
 };
 
 // Set up kernel part of a page table.
