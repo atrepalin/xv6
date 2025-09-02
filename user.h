@@ -40,6 +40,12 @@ void free(void*);
 int atoi(const char*);
 
 // vbe.c
-int vbe_init(void);
+int vbe_init(int width, int height);
 int vbe_disable(void);
+int vbe_clear(void);
 int vbe_putpixel(int x, int y, int color);
+int vbe_draw_triangle(int x1, int y1, int x2, int y2, int x3, int y3, int color);
+int vbe_draw_circle(int cx, int cy, int r, int color);
+int vbe_draw_rect(int x1, int y1, int x2, int y2, int color);
+int vbe_draw_line(int x1, int y1, int x2, int y2, int color);
+int vbe_draw_sprite(int x, int y, int w, int h, int *data);

@@ -2,60 +2,42 @@
 #include "stat.h"
 #include "user.h"
 
-int area(int x1, int y1, int x2, int y2, int x3, int y3) {
-    int a = x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2);
-    return a < 0 ? -a : a;
-}
+#define abs(x) ((x) < 0 ? -(x) : (x))
+#define COLOR(r, g, b) (((r) << 16) | ((g) << 8) | (b))
 
 int main() {
-    vbe_init();
+    vbe_init(800, 600);
 
-    int x1 = 100, y1 = 100;
-    int x2 = 150, y2 = 50;
-    int x3 = 200, y3 = 150;
+    vbe_draw_triangle(100, 100, 150, 50, 200, 150, COLOR(255, 0, 0));
 
-    int minX = x1 < x2 ? (x1 < x3 ? x1 : x3) : (x2 < x3 ? x2 : x3);
-    int maxX = x1 > x2 ? (x1 > x3 ? x1 : x3) : (x2 > x3 ? x2 : x3);
-    int minY = y1 < y2 ? (y1 < y3 ? y1 : y3) : (y2 < y3 ? y2 : y3);
-    int maxY = y1 > y2 ? (y1 > y3 ? y1 : y3) : (y2 > y3 ? y2 : y3);
+    vbe_draw_circle(350, 250, 50, COLOR(0, 255, 0));
 
-    for(int x = minX; x <= maxX; x++) {
-        for(int y = minY; y <= maxY; y++) {
-            int A = area(x1, y1, x2, y2, x3, y3);
-            int A1 = area(x, y, x2, y2, x3, y3);
-            int A2 = area(x1, y1, x, y, x3, y3);
-            int A3 = area(x1, y1, x2, y2, x, y);
-            if(A == A1 + A2 + A3) {
-                vbe_putpixel(x, y, 0xFF0000);
-            }
+    vbe_draw_rect(500, 400, 700, 500, COLOR(0, 0, 255));
+
+    vbe_draw_line(100, 150, 200, 400, COLOR(255, 255, 0));
+
+    int w = 128, h = 128;
+    int *sprite = malloc(w * h * sizeof(int));
+
+    for(int i = 0; i < w; i++) {
+        for(int j = 0; j < h; j++) {
+            int idx = i * w + j;
+
+            int red   = 255 - (j * 255) / (w - 1);
+            int green = (j * 255) / (w - 1);
+            int blue  = (i * 255) / (h - 1);                     
+
+            sprite[idx] = COLOR(red, green, blue);
         }
     }
 
-    int cx = 350;
-    int cy = 250;
-    int r = 50;
-
-    for(int x = cx - r; x <= cx + r; x++) {
-        for(int y = cy - r; y <= cy + r; y++) {
-            int dx = x - cx;
-            int dy = y - cy;
-            if(dx * dx + dy * dy <= r * r) {
-                vbe_putpixel(x, y, 0x00FF00);
-            }
-        }
-    }
-
-    for(int i = 500; i < 700; i++) { 
-        for(int j = 400; j < 500; j++) {
-            vbe_putpixel(i, j, 0x0000FF); 
-        } 
-    }
+    vbe_draw_sprite(500, 100, w, h, sprite);
 
     char c;
     while(read(0, &c, 1) == 1) {
         if(c == '\n') break;
     }
 
-    vbe_disable();
+    vbe_clear();
     exit();
 }
