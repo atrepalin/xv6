@@ -15,11 +15,11 @@ vbe_write_reg(ushort index, ushort value) {
     outw(VBE_DISPI_IOPORT_DATA, value);
 }
 
-int sys_vbe_init(void) {
-    if(argint(0, &width) < 0 || argint(1, &height) < 0) 
-        return -1;
+void vbe_init(int w, int h) {
+    width = w;
+    height = h;
 
-    if(lfb) return -1;
+    if(lfb) return;
     
     vbe_write_reg(VBE_DISPI_INDEX_ENABLE, VBE_DISPI_DISABLED);
     vbe_write_reg(VBE_DISPI_INDEX_XRES, width);
@@ -29,7 +29,7 @@ int sys_vbe_init(void) {
 
     lfb = (uint*)FB_VA;
 
-    return 0;
+    return;
 }
 
 int sys_vbe_disable(void) {

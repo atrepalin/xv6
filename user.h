@@ -23,6 +23,7 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int poweroff(void);
 
 // ulib.c
 int stat(const char*, struct stat*);
@@ -40,7 +41,6 @@ void free(void*);
 int atoi(const char*);
 
 // vbe.c
-int vbe_init(int width, int height);
 int vbe_disable(void);
 int vbe_clear(void);
 int vbe_putpixel(int x, int y, int color);

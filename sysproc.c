@@ -89,3 +89,13 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// power off the system
+int
+sys_poweroff(void)
+{
+  cprintf("Powering off...\n");
+  outw(0x604, 0x2000);
+
+  return 0;
+}

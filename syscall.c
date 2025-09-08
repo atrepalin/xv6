@@ -103,7 +103,7 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
-extern int sys_vbe_init(void);
+extern int sys_poweroff(void);
 extern int sys_vbe_disable(void);
 extern int sys_vbe_clear(void);
 extern int sys_vbe_putpixel(void);
@@ -135,7 +135,7 @@ static int (*syscalls[])(void) = {
 [SYS_link]              sys_link,
 [SYS_mkdir]             sys_mkdir,
 [SYS_close]             sys_close,
-[SYS_vbe_init]          sys_vbe_init,
+[SYS_poweroff]          sys_poweroff,
 [SYS_vbe_disable]       sys_vbe_disable,
 [SYS_vbe_clear]         sys_vbe_clear,
 [SYS_vbe_putpixel]      sys_vbe_putpixel,

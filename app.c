@@ -6,8 +6,6 @@
 #define COLOR(r, g, b) (((r) << 16) | ((g) << 8) | (b))
 
 int main() {
-    vbe_init(800, 600);
-
     vbe_draw_triangle(100, 100, 150, 50, 200, 150, COLOR(255, 0, 0));
 
     vbe_draw_circle(350, 250, 50, COLOR(0, 255, 0));

@@ -167,10 +167,11 @@ mkfs: mkfs.c fs.h
 .PRECIOUS: %.o
 
 UPROGS=\
-	_lab\
 	_app\
 	_cat\
+	_clear\
 	_echo\
+	_exit\
 	_forktest\
 	_grep\
 	_init\

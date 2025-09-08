@@ -20,7 +20,7 @@
 #define SYS_link                19
 #define SYS_mkdir               20
 #define SYS_close               21
-#define SYS_vbe_init            22
+#define SYS_poweroff            22
 #define SYS_vbe_disable         23
 #define SYS_vbe_clear           24
 #define SYS_vbe_putpixel        25
