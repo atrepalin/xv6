@@ -9,6 +9,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+struct window;
 
 // bio.c
 void            binit(void);
@@ -63,14 +64,38 @@ void            ioapicenable(int irq, int cpu);
 extern uchar    ioapicid;
 void            ioapicinit(void);
 
+// alloc.c
+void*           kmalloc(int size);
+void            kmfree(void *ptr);
+void            kminit(void);
+
 // kalloc.c
-char*           kalloc(void);
-void            kfree(char*);
+void*           kalloc(void);
+void            kfree(void*);
 void            kinit1(void*, void*);
 void            kinit2(void*, void*);
+void*           kalloc_npages(int);
+void            kfree_npages(void*, int);
 
 // kbd.c
 void            kbdintr(void);
+
+// mouse.c
+void            mouseinit(void);
+void            mouseintr(uint);
+
+// memory.c
+void            memcpy_fast(void *dst, const void *src, uint n);
+void            memset_fast(void *dst, uchar c, uint n);
+void            memset_fast_long(void *dst, ulong val, uint n);
+
+// composer.c
+void            initcomposer(void);
+void            compose(void);
+void            invalidate(int x, int y, int w, int h);
+void            add_window(struct window *win);
+void            bring_to_front(struct window *win);
+void            window_destroy(struct window *win);
 
 // lapic.c
 void            cmostime(struct rtcdate *r);
@@ -188,3 +213,6 @@ void            clearpteu(pde_t *pgdir, char *uva);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+#define WIDTH 800
+#define HEIGHT 600

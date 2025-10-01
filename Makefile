@@ -28,6 +28,12 @@ OBJS = \
 	vectors.o\
 	vm.o\
 	vbe.o\
+	mouse.o\
+	msg.o\
+	alloc.o\
+	window.o\
+	composer.o\
+	memory.o\
 
 # Cross-compiling (e.g., on Mac OS X)
 # TOOLPREFIX = i386-jos-elf

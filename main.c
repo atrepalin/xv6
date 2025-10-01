@@ -21,6 +21,7 @@ main(void)
 {
   kinit1(end, P2V(4*1024*1024)); // phys page allocator
   kvmalloc();      // kernel page table
+  kminit();
   mpinit();        // detect other processors
   lapicinit();     // interrupt controller
   seginit();       // segment descriptors
@@ -28,6 +29,7 @@ main(void)
   ioapicinit();    // another interrupt controller
   consoleinit();   // console hardware
   uartinit();      // serial port
+  mouseinit();     // ps/2 mouse
   pinit();         // process table
   tvinit();        // trap vectors
   binit();         // buffer cache
@@ -36,7 +38,8 @@ main(void)
   startothers();   // start other processors
   kinit2(P2V(4*1024*1024), P2V(PHYSTOP)); // must come after startothers()
   userinit();      // first user process
-  vbe_init(800, 600); // init vbe display
+  vbe_init(WIDTH, HEIGHT); // init vbe display
+  initcomposer();
   mpmain();        // finish this processor's setup
 }
 

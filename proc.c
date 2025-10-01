@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "window.h"
 
 struct {
   struct spinlock lock;
@@ -88,6 +89,8 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+
+  p->win = 0;
 
   release(&ptable.lock);
 
@@ -241,6 +244,8 @@ exit(void)
       curproc->ofile[fd] = 0;
     }
   }
+
+  window_destroy(curproc->win);
 
   begin_op();
   iput(curproc->cwd);
