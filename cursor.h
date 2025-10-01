@@ -3,7 +3,7 @@
 
 #define PACK(r, g, b) ((r << 16) | (g << 8) | b)
 
-#define D 16
+#define D PACK(16, 16, 16)
 #define L PACK(200, 200, 200)
 
 unsigned long mouse_pointer[MOUSE_HEIGHT][MOUSE_WIDTH] = {
