@@ -32,6 +32,8 @@ sys_create_window(void)
     win->next_z = 0;
     win->owner = p;
 
+    win->queue.head = win->queue.tail = 0;
+
     win->backbuf = kmalloc(w * h * sizeof(struct rgb));
     if (!win->backbuf) {
         kmfree(win);
@@ -114,12 +116,14 @@ sys_move_window(void) {
 
     struct window *win = p->win;
 
+    acquire(&win->lock);
     invalidate(win->x, win->y, win->w, win->h);
 
     win->x = new_x;
     win->y = new_y;
 
     invalidate(win->x, win->y, win->w, win->h);
+    release(&win->lock);
 
     return 0;
 }

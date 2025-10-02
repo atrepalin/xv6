@@ -110,6 +110,7 @@ extern int sys_invalidate_window(void);
 extern int sys_fill_window(void);
 extern int sys_bring_to_front(void);
 extern int sys_move_window(void);
+extern int sys_get_msg(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]     sys_fork,
@@ -139,7 +140,8 @@ static int (*syscalls[])(void) = {
 [SYS_invalidate_window] sys_invalidate_window,
 [SYS_fill_window]       sys_fill_window,
 [SYS_bring_to_front]    sys_bring_to_front,
-[SYS_move_window]       sys_move_window
+[SYS_move_window]       sys_move_window,
+[SYS_get_msg]           sys_get_msg
 };
 
 void

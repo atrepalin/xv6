@@ -110,6 +110,26 @@ void bring_to_front(struct window *win) {
     cur->next_z = 0;
 }
 
+void click_bring_to_front(void) {
+    struct window *target = 0;
+
+    for (struct window *win = head; win; win = win->next_z) {
+        if (mouse_x >= win->x && mouse_x < win->x + win->w &&
+            mouse_y >= win->y && mouse_y < win->y + win->h && win->visible) {
+            target = win;
+        }
+    }
+
+    if (target) {
+        acquire(&target->lock);
+
+        bring_to_front(target);
+        invalidate(target->x, target->y, target->w, target->h);
+
+        release(&target->lock);
+    }
+}
+
 void invalidate(int x, int y, int w, int h) {
     if (invalidated.count >= MAX_RECTS) return;
     struct rect *r = &invalidated.rects[invalidated.count++];
@@ -124,8 +144,8 @@ void draw_cursor(void) {
     if(mouse_x >= 0 && mouse_y >= 0 && mouse_x < screen_w && mouse_y < screen_h) {
         ulong col;
 
-        for(int i = 0, y = mouse_y; i < MOUSE_HEIGHT; i++, y++) {
-            for(int j = 0, x = mouse_x; j < MOUSE_WIDTH; j++, x++ ) {
+        for(int i = 0, y = mouse_y; i < MOUSE_HEIGHT && y < screen_h; i++, y++) {
+            for(int j = 0, x = mouse_x; j < MOUSE_WIDTH && x < screen_w; j++, x++ ) {
                 if((col = mouse_pointer[i][j])) {
                     int offset = (y * screen_w + x) * sizeof(struct rgb);
 

@@ -96,6 +96,8 @@ void mouseinit(void)
   mouse_y = HEIGHT - packet.y;
 }
 
+static uint last_tick_msg = 0;
+
 void mouse_msg()
 {
   if (packet.x_overflow || packet.y_overflow)
@@ -116,6 +118,11 @@ void mouse_msg()
 
   if (packet.x_mov || packet.y_mov)
   {
+    if (packet.tick - last_tick_msg < 5)
+      return;
+
+    last_tick_msg = packet.tick;
+
     type = M_MOUSE_MOVE;
     lastdowntick = -1000;
   }
@@ -144,8 +151,8 @@ void mouse_msg()
 
   struct msg m;
   m.type = type;
-  m.mouse.x = packet.x;
-  m.mouse.y = packet.y;
+  m.mouse.x = mouse_x;
+  m.mouse.y = mouse_y;
   m.mouse.button = btns;
 
   send_msg(&m);

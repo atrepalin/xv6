@@ -12,6 +12,11 @@
 #define M_MOUSE_LEFT_CLICK 6
 #define M_MOUSE_RIGHT_CLICK 7
 
+#define IS_MOUSE(type) type > M_KEY_DOWN
+#define IS_KEY(type) type <= M_KEY_DOWN
+
+#define IS_ESC(msg) msg->type == M_KEY_DOWN && msg->key.charcode == 27
+
 #define BTN_LEFT 1
 #define BTN_RIGHT 2
 

@@ -1,13 +1,7 @@
 #include "types.h"
 #include "stat.h"
 #include "user.h"
-
-void read_key() {
-    char c;
-    while(read(0, &c, 1) == 1) {
-        if(c == '\n') break;
-    }
-}
+#include "msg.h"
 
 int main() {
     int pid = fork();
@@ -16,20 +10,30 @@ int main() {
         create_window(0, 0, 200, 200);
         fill_window(255, 0, 0);
 
-        while(1) {
-            sleep(1000);
+        struct msg* msg = malloc(sizeof(struct msg));
+
+        while(get_msg(msg, 1)) {
+            if(IS_MOUSE(msg->type))
+                printf(1, "child: %d %d\n", msg->mouse.x, msg->mouse.y);
+
+            if(IS_ESC(msg)) {
+                exit();
+            }
         }
     } else {
         create_window(100, 100, 200, 200);
         fill_window(0, 255, 0);
 
-        read_key();
+        struct msg* msg = malloc(sizeof(struct msg));
 
-        bring_to_front();
+        while(get_msg(msg, 1)) {
+            if(IS_MOUSE(msg->type))
+                printf(1, "parent: %d %d\n", msg->mouse.x, msg->mouse.y);
 
-        read_key();
-
-        kill(pid);
+            if(IS_ESC(msg)) {
+                exit();
+            }
+        }
     }
 
     exit();

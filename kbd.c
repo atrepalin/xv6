@@ -7,6 +7,8 @@
 static char input[1024];
 static int idx = 0;
 
+static char prev = 0;
+
 int getchar() {
   return input[idx++];
 }
@@ -51,11 +53,15 @@ kbdgetc(void)
   }
 
 end:
-  struct msg m;
-  m.type = c ? M_KEY_DOWN : M_KEY_UP;
-  m.key.charcode = c;
-  m.key.pressed = c > 0;
-  send_msg(&m);
+  if(prev != c) {
+    struct msg m;
+    m.type = c ? M_KEY_DOWN : M_KEY_UP;
+    m.key.charcode = c;
+    m.key.pressed = c > 0;
+    send_msg(&m);
+  }
+
+  prev = c;
 
   return c;
 }

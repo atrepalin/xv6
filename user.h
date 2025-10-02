@@ -1,5 +1,6 @@
 struct stat;
 struct rtcdate;
+struct msg;
 
 // system calls
 int fork(void);
@@ -45,3 +46,4 @@ int invalidate_window(int, int, int, int);
 int fill_window(uchar, uchar, uchar);
 int bring_to_front(void);
 int move_window(int, int);
+int get_msg(struct msg*, int);

@@ -27,3 +27,4 @@
 #define SYS_fill_window       25
 #define SYS_bring_to_front    26
 #define SYS_move_window       27
+#define SYS_get_msg           28
