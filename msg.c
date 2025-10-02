@@ -22,7 +22,10 @@ void wait_for_msg(struct proc *p) {
     p->chan = &chan;
     p->state = SLEEPING;
 
-    sched();
+    int intena = mycpu()->intena;
+    swtch(&p->context, mycpu()->scheduler);
+    mycpu()->intena = intena;
+
     release(&ptable.lock);
 
     p->chan = 0;
