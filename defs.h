@@ -95,7 +95,7 @@ void            compose(void);
 void            invalidate(int x, int y, int w, int h);
 void            add_window(struct window *win);
 void            bring_to_front(struct window *win);
-void            click_bring_to_front(void);
+int             click_bring_to_front(void);
 void            window_destroy(struct window *win);
 
 // lapic.c

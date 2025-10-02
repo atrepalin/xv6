@@ -14,7 +14,7 @@ int main() {
 
         while(get_msg(msg, 1)) {
             if(IS_MOUSE(msg->type))
-                printf(1, "child: %d %d\n", msg->mouse.x, msg->mouse.y);
+                printf(1, "child: %d %d %d\n", msg->type, msg->mouse.x, msg->mouse.y);
 
             if(IS_ESC(msg)) {
                 exit();
@@ -28,7 +28,7 @@ int main() {
 
         while(get_msg(msg, 1)) {
             if(IS_MOUSE(msg->type))
-                printf(1, "parent: %d %d\n", msg->mouse.x, msg->mouse.y);
+                printf(1, "parent: %d %d %d\n", msg->type, msg->mouse.x, msg->mouse.y);
 
             if(IS_ESC(msg)) {
                 exit();

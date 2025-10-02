@@ -65,7 +65,7 @@ void enqueue_msg(struct window *win, struct msg *m) {
 
 void send_msg(struct msg *msg) {
     if(msg->type == M_MOUSE_DOWN) {
-        click_bring_to_front();
+        if(click_bring_to_front()) return;
     }
 
     enqueue_msg(tail, msg);

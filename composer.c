@@ -110,7 +110,7 @@ void bring_to_front(struct window *win) {
     cur->next_z = 0;
 }
 
-void click_bring_to_front(void) {
+int click_bring_to_front(void) {
     struct window *target = 0;
 
     for (struct window *win = head; win; win = win->next_z) {
@@ -120,14 +120,18 @@ void click_bring_to_front(void) {
         }
     }
 
-    if (target) {
+    if (target && target != tail) {
         acquire(&target->lock);
 
         bring_to_front(target);
         invalidate(target->x, target->y, target->w, target->h);
 
         release(&target->lock);
+
+        return 1;
     }
+
+    return 0;
 }
 
 void invalidate(int x, int y, int w, int h) {
