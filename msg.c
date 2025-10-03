@@ -86,8 +86,8 @@ sys_get_msg(void) {
     char* user_msg;
     int should_wait = 0;
 
-    if (argptr(0, &user_msg, sizeof(struct msg)) < 0) return -1;
-    if (argint(1, &should_wait) < 0) return -1;
+    if (argptr(0, &user_msg, sizeof(struct msg)) < 0) return 0;
+    if (argint(1, &should_wait) < 0) return 0;
 
     struct proc *p = myproc();
     struct window *win = p->win;
