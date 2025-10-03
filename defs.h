@@ -96,7 +96,7 @@ void            invalidate(int x, int y, int w, int h);
 void            add_window(struct window *win);
 void            bring_to_front(struct window *win);
 int             click_bring_to_front(void);
-void            window_destroy(struct window *win);
+void            destroy_window(struct window *win);
 
 // lapic.c
 void            cmostime(struct rtcdate *r);

@@ -57,7 +57,7 @@ void add_window(struct window *win) {
     release(&win->lock);
 }
 
-void window_destroy(struct window *win) {
+void destroy_window(struct window *win) {
     if (!win) return;
 
     acquire(&win->lock);
@@ -115,7 +115,8 @@ int click_bring_to_front(void) {
 
     for (struct window *win = head; win; win = win->next_z) {
         if (mouse_x >= win->x && mouse_x < win->x + win->w &&
-            mouse_y >= win->y && mouse_y < win->y + win->h && win->visible) {
+            mouse_y >= win->y && mouse_y < win->y + win->h && 
+            win->visible) {
             target = win;
         }
     }
@@ -145,12 +146,12 @@ void invalidate(int x, int y, int w, int h) {
 }
 
 void draw_cursor(void) {
-    if(mouse_x >= 0 && mouse_y >= 0 && mouse_x < screen_w && mouse_y < screen_h) {
+    if (mouse_x >= 0 && mouse_y >= 0 && mouse_x < screen_w && mouse_y < screen_h) {
         ulong col;
 
-        for(int i = 0, y = mouse_y; i < MOUSE_HEIGHT && y < screen_h; i++, y++) {
-            for(int j = 0, x = mouse_x; j < MOUSE_WIDTH && x < screen_w; j++, x++ ) {
-                if((col = mouse_pointer[i][j])) {
+        for (int i = 0, y = mouse_y; i < MOUSE_HEIGHT && y < screen_h; i++, y++) {
+            for (int j = 0, x = mouse_x; j < MOUSE_WIDTH && x < screen_w; j++, x++ ) {
+                if ((col = mouse_pointer[i][j])) {
                     int offset = (y * screen_w + x) * sizeof(struct rgb);
 
                     ulong *dst = (ulong*)(framebuffer + offset);

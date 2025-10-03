@@ -12,12 +12,10 @@ static struct
   int l_btn, r_btn, m_btn;
   int x_overflow, y_overflow;
   uint tick;
-
-  int x, y;
 } packet;
 static int count;
 static int recovery;
-static int lastbtn, lastdowntick;
+static int lastbtn, isdown, lastdowntick, lastmsgtick;
 
 int mouse_x, mouse_y;
 
@@ -89,49 +87,46 @@ void mouseinit(void)
   count = 0;
   lastdowntick = -1000;
 
-  packet.x = WIDTH / 2;
-  packet.y = HEIGHT / 2;
-
-  mouse_x = packet.x;
-  mouse_y = HEIGHT - packet.y;
+  mouse_x = WIDTH / 2;
+  mouse_y = HEIGHT / 2;
 }
-
-static uint last_tick_msg = 0;
 
 void mouse_msg()
 {
+  struct msg m;
+
   if (packet.x_overflow || packet.y_overflow)
     return;
   int x = packet.x_sgn ? (0xffffff00 | (packet.x_mov & 0xff)) : (packet.x_mov & 0xff);
   int y = packet.y_sgn ? (0xffffff00 | (packet.y_mov & 0xff)) : (packet.y_mov & 0xff);
   packet.x_mov = x;
   packet.y_mov = y;
-  packet.x += x;
-  packet.y += y;
 
-  mouse_x = packet.x;
-  mouse_y = HEIGHT - packet.y;
+  mouse_x += x;
+  mouse_y -= y;
 
   int btns = packet.l_btn | (packet.r_btn << 1) | (packet.m_btn << 2);
 
-  int type = 0;
+  int type = M_NONE;
 
   if (packet.x_mov || packet.y_mov)
   {
-    if (packet.tick - last_tick_msg < 5)
+    if (packet.tick - lastmsgtick < 5)
       return;
 
-    last_tick_msg = packet.tick;
+    lastmsgtick = packet.tick;
 
     type = M_MOUSE_MOVE;
     lastdowntick = -1000;
   }
-  else if (btns)
+  else if (btns && !isdown)
   {
     type = M_MOUSE_DOWN;
+
     lastdowntick = packet.tick;
+    isdown = 1;
   }
-  else if (packet.tick - lastdowntick < 30)
+  else if (packet.tick - lastdowntick < 30 && isdown)
   {
     if (lastbtn & 1)
     {
@@ -141,15 +136,25 @@ void mouse_msg()
     {
       type = M_MOUSE_RIGHT_CLICK;
     }
+
+    isdown = 0;
+    lastdowntick = -1000;
+
+    m.type = M_MOUSE_UP;
+    m.mouse.x = mouse_x;
+    m.mouse.y = mouse_y;
+    m.mouse.button = btns;
+    send_msg(&m);
   }
-  else {
+  else if(isdown) {
     type = M_MOUSE_UP;
+
+    isdown = 0;
     lastdowntick = -1000;
   }
   
   lastbtn = btns;
 
-  struct msg m;
   m.type = type;
   m.mouse.x = mouse_x;
   m.mouse.y = mouse_y;

@@ -33,6 +33,7 @@ sys_create_window(void)
     win->owner = p;
 
     win->queue.head = win->queue.tail = 0;
+    initlock(&win->queue.lock, "msg_queue");
 
     win->backbuf = kmalloc(w * h * sizeof(struct rgb));
     if (!win->backbuf) {
@@ -64,7 +65,10 @@ sys_invalidate_window(void)
     int gx = win->x + x;
     int gy = win->y + y;
 
+    acquire(&win->lock);
     invalidate(gx, gy, w, h);
+    release(&win->lock);
+    
     return 0;
 }
 
@@ -84,9 +88,9 @@ sys_fill_window(void)
 
     acquire(&win->lock);
     memset_fast_long(win->backbuf, PACK(r, g, b), win->w * win->h);
-    release(&win->lock);
 
     invalidate(win->x, win->y, win->w, win->h);
+    release(&win->lock);
 
     return 0;
 }
@@ -97,9 +101,12 @@ sys_bring_to_front(void) {
     if (!p->win) return -1;
 
     struct window *win = p->win;
+
+    acquire(&win->lock);
     bring_to_front(win);
 
     invalidate(win->x, win->y, win->w, win->h);
+    release(&win->lock);
 
     return 0;
 }

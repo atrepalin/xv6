@@ -21,6 +21,7 @@ struct msg_queue {
     struct msg msgs[MSG_QUEUE_SIZE];
     int head;
     int tail;
+    struct spinlock lock;
 };
 
 struct window {

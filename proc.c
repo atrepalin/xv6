@@ -245,7 +245,7 @@ exit(void)
     }
   }
 
-  window_destroy(curproc->win);
+  destroy_window(curproc->win);
 
   begin_op();
   iput(curproc->cwd);

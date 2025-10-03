@@ -1,7 +1,7 @@
 #ifndef __MSG_H__
 #define __MSG_H__
 
-#include "types.h"
+#define M_NONE 0
 
 #define M_KEY_UP 1
 #define M_KEY_DOWN 2
@@ -12,10 +12,12 @@
 #define M_MOUSE_LEFT_CLICK 6
 #define M_MOUSE_RIGHT_CLICK 7
 
-#define IS_MOUSE(type) type > M_KEY_DOWN
-#define IS_KEY(type) type <= M_KEY_DOWN
+#define M_CUSTOM 8
 
-#define IS_ESC(msg) msg->type == M_KEY_DOWN && msg->key.charcode == 27
+#define IS_MOUSE(type) type > M_KEY_DOWN && type < M_CUSTOM
+#define IS_KEY(type) type <= M_KEY_DOWN && type > M_NONE
+
+#define IS_ESC(msg) msg.type == M_KEY_DOWN && msg.key.charcode == 27
 
 #define BTN_LEFT 1
 #define BTN_RIGHT 2

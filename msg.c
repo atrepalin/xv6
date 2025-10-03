@@ -10,15 +10,17 @@
 #include "window.h"
 #include "proc.h"
 
-int chan = 0;
+static int chan;
 
 extern struct {
   struct spinlock lock;
-  struct proc proc[NPROC];
 } ptable;
+
+extern struct window *tail;
 
 void wait_for_msg(struct proc *p) {
     acquire(&ptable.lock);
+
     p->chan = &chan;
     p->state = SLEEPING;
 
@@ -26,22 +28,24 @@ void wait_for_msg(struct proc *p) {
     swtch(&p->context, mycpu()->scheduler);
     mycpu()->intena = intena;
 
-    release(&ptable.lock);
-
     p->chan = 0;
+
+    release(&ptable.lock);
 }
 
 void wakeup_on_msg(struct proc *p) {
-    if(p->state == SLEEPING && p->chan == &chan) {
+    acquire(&ptable.lock);
+
+    if (p->state == SLEEPING && p->chan == &chan) {
         p->state = RUNNABLE;
         p->chan = 0;
     }
+
+    release(&ptable.lock);
 }
 
-extern struct window *tail;
-
 void enqueue_msg(struct window *win, struct msg *m) {
-    if(!win) return;
+    if (!win) return;
 
     if (m->type > M_KEY_DOWN) {
         m->mouse.x -= win->x;
@@ -50,6 +54,8 @@ void enqueue_msg(struct window *win, struct msg *m) {
         if(m->mouse.x < 0 || m->mouse.x >= win->w ||
             m->mouse.y < 0 || m->mouse.y >= win->h) return;
     }
+
+    acquire(&win->queue.lock);
 
     int next = (win->queue.tail + 1) % MSG_QUEUE_SIZE;
 
@@ -61,11 +67,13 @@ void enqueue_msg(struct window *win, struct msg *m) {
 
         wakeup_on_msg(p);
     }
+
+    release(&win->queue.lock);
 }
 
 void send_msg(struct msg *msg) {
-    if(msg->type == M_MOUSE_DOWN) {
-        if(click_bring_to_front()) return;
+    if (msg->type == M_MOUSE_DOWN) {
+        click_bring_to_front();
     }
 
     enqueue_msg(tail, msg);
@@ -73,24 +81,38 @@ void send_msg(struct msg *msg) {
 
 int 
 sys_get_msg(void) {
+    struct msg m;
+
     char* user_msg;
     int should_wait = 0;
 
-    if(argptr(0, &user_msg, sizeof(struct msg)) < 0) return -1;
-    if(argint(1, &should_wait) < 0) return -1;
+    if (argptr(0, &user_msg, sizeof(struct msg)) < 0) return -1;
+    if (argint(1, &should_wait) < 0) return -1;
 
     struct proc *p = myproc();
     struct window *win = p->win;
     if (!win) return 0;
 
-    if (win->queue.head == win->queue.tail && should_wait) {
+    acquire(&win->queue.lock);
+    if (win->queue.head == win->queue.tail) {
+        if (!should_wait) {
+            m.type = M_NONE;
+
+            goto out;
+        }
+
+        release(&win->queue.lock);
         wait_for_msg(p);
+        acquire(&win->queue.lock);
     }
 
-    struct msg m = win->queue.msgs[win->queue.head];
+    m = win->queue.msgs[win->queue.head];
     win->queue.head = (win->queue.head + 1) % MSG_QUEUE_SIZE;
 
-    if (copyout(p->pgdir, (uint)user_msg, (char *)&m, sizeof(m)) < 0)
+out:
+    release(&win->queue.lock);
+
+    if (copyout(p->pgdir, (uint)user_msg, &m, sizeof(m)) < 0)
         return 0;
 
     return 1;
