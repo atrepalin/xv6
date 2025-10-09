@@ -23,8 +23,14 @@
 #define SYS_poweroff 22
 
 #define SYS_create_window     23
-#define SYS_invalidate_window 24
-#define SYS_fill_window       25
-#define SYS_bring_to_front    26
-#define SYS_move_window       27
-#define SYS_get_msg           28
+#define SYS_destroy_window    24
+#define SYS_invalidate_window 25
+#define SYS_fill_window       26
+#define SYS_fill_rect         27
+#define SYS_draw_line         28
+#define SYS_draw_text         29
+#define SYS_bring_to_front    30
+#define SYS_move_window       31
+#define SYS_get_msg           32
+#define SYS_capture_window    33
+#define SYS_release_window    34

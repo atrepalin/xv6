@@ -1,12 +1,13 @@
 #define MOUSE_HEIGHT 16
 #define MOUSE_WIDTH 10
+#include "types.h"
 
 #define PACK(r, g, b) ((r << 16) | (g << 8) | b)
 
 #define D PACK(16, 16, 16)
 #define L PACK(200, 200, 200)
 
-unsigned long mouse_pointer[MOUSE_HEIGHT][MOUSE_WIDTH] = {
+ulong mouse_pointer[MOUSE_HEIGHT][MOUSE_WIDTH] = {
     {L, 0, 0, 0, 0, 0, 0, 0, 0, 0},
     {L, L, 0, 0, 0, 0, 0, 0, 0, 0},
     {L, D, L, 0, 0, 0, 0, 0, 0, 0},

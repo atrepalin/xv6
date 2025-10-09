@@ -41,9 +41,15 @@ void* malloc(uint);
 void free(void*);
 int atoi(const char*);
 
-int create_window(int, int, int, int);
+int sys_create_window(int, int, int, int);
+int destroy_window(void);
 int invalidate_window(int, int, int, int);
 int fill_window(uchar, uchar, uchar);
+int fill_rect(int, int, int, int, uchar, uchar, uchar);
+int draw_line(int, int, int, int, uchar, uchar, uchar);
+int draw_text(int, int, uchar, uchar, uchar, const char*);
 int bring_to_front(void);
 int move_window(int, int);
 int get_msg(struct msg*, int);
+int capture_window(void);
+int release_window(void);

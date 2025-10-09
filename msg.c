@@ -18,6 +18,8 @@ extern struct {
 
 extern struct window *tail;
 
+struct window *captured;
+
 void wait_for_msg(struct proc *p) {
     acquire(&ptable.lock);
 
@@ -44,15 +46,16 @@ void wakeup_on_msg(struct proc *p) {
     release(&ptable.lock);
 }
 
-void enqueue_msg(struct window *win, struct msg *m) {
+void enqueue_msg(struct window *win, int captured, struct msg *m) {
     if (!win) return;
 
     if (m->type > M_KEY_DOWN) {
         m->mouse.x -= win->x;
         m->mouse.y -= win->y;
 
-        if(m->mouse.x < 0 || m->mouse.x >= win->w ||
-            m->mouse.y < 0 || m->mouse.y >= win->h) return;
+        if((m->mouse.x < 0 || m->mouse.x >= win->w ||
+            m->mouse.y < 0 || m->mouse.y >= win->h) && 
+            !captured) return;
     }
 
     acquire(&win->queue.lock);
@@ -76,7 +79,7 @@ void send_msg(struct msg *msg) {
         click_bring_to_front();
     }
 
-    enqueue_msg(tail, msg);
+    enqueue_msg(tail, tail == captured, msg);
 }
 
 int 
@@ -116,4 +119,20 @@ out:
         return 0;
 
     return 1;
+}
+
+int
+sys_capture_window(void) {
+    struct proc *p = myproc();
+
+    if (!p->win) return -1;
+
+    captured = p->win;
+    return 0;
+}
+
+int
+sys_release_window(void) {
+    captured = 0;
+    return 0;
 }

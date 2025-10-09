@@ -106,11 +106,17 @@ extern int sys_uptime(void);
 extern int sys_poweroff(void);
 
 extern int sys_create_window(void);
+extern int sys_destroy_window(void);
 extern int sys_invalidate_window(void);
 extern int sys_fill_window(void);
+extern int sys_fill_rect(void);
+extern int sys_draw_line(void);
+extern int sys_draw_text(void);
 extern int sys_bring_to_front(void);
 extern int sys_move_window(void);
 extern int sys_get_msg(void);
+extern int sys_capture_window(void);
+extern int sys_release_window(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]     sys_fork,
@@ -137,11 +143,17 @@ static int (*syscalls[])(void) = {
 [SYS_poweroff] sys_poweroff,
 
 [SYS_create_window]     sys_create_window,
+[SYS_destroy_window]    sys_destroy_window,
 [SYS_invalidate_window] sys_invalidate_window,
 [SYS_fill_window]       sys_fill_window,
+[SYS_fill_rect]         sys_fill_rect,
+[SYS_draw_line]         sys_draw_line,
+[SYS_draw_text]         sys_draw_text,
 [SYS_bring_to_front]    sys_bring_to_front,
 [SYS_move_window]       sys_move_window,
-[SYS_get_msg]           sys_get_msg
+[SYS_get_msg]           sys_get_msg,
+[SYS_capture_window]    sys_capture_window,
+[SYS_release_window]    sys_release_window
 };
 
 void

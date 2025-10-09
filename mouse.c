@@ -146,7 +146,7 @@ void mouse_msg()
     m.mouse.button = btns;
     send_msg(&m);
   }
-  else if(isdown) {
+  else if(isdown && !btns) {
     type = M_MOUSE_UP;
 
     isdown = 0;

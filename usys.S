@@ -31,9 +31,20 @@ SYSCALL(sleep)
 SYSCALL(uptime)
 SYSCALL(poweroff)
 
-SYSCALL(create_window)
+SYSCALL(destroy_window)
 SYSCALL(invalidate_window)
 SYSCALL(fill_window)
+SYSCALL(fill_rect)
+SYSCALL(draw_line)
+SYSCALL(draw_text)
 SYSCALL(bring_to_front)
 SYSCALL(move_window)
 SYSCALL(get_msg)
+SYSCALL(capture_window)
+SYSCALL(release_window)
+
+.globl sys_create_window;
+  sys_create_window:
+    movl $SYS_create_window, %eax;
+    int $T_SYSCALL;
+    ret
