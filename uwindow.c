@@ -8,8 +8,11 @@
 
 #define BAR        100, 100, 255
 #define ClOSE_BTN  255, 50,  50
+#define MIN_BTN    70, 70, 200
 #define FOREGROUND 255, 255, 255
 #define BORDER     128, 128, 128
+
+extern int sys_create_window(int, int, int, int, const char*);
 
 struct user_window create_window(int x, int y, int w, int h, 
     const char *title, uchar r, uchar g, uchar b) {
@@ -21,14 +24,17 @@ struct user_window create_window(int x, int y, int w, int h,
         .title = title
     };
 
-    sys_create_window(win.x, win.y, win.w, win.h);
+    sys_create_window(win.x, win.y, win.w, win.h, title);
     fill_window(r, g, b);
 
     fill_rect(0, 0, win.w, TITLE_HEIGHT, BAR);
     draw_text_centered(win.w / 2, TITLE_HEIGHT / 2, FOREGROUND, win.title);
     
-    fill_rect(win.w - BTN_SIZE - 2, 2, BTN_SIZE, BTN_SIZE, ClOSE_BTN);
+    fill_rect(win.w - (BTN_SIZE + 2), 2, BTN_SIZE, BTN_SIZE, ClOSE_BTN);
     draw_text_centered(win.w - BTN_SIZE / 2 - 3, TITLE_HEIGHT / 2, FOREGROUND, "X");
+
+    fill_rect(win.w - (BTN_SIZE + 2) * 2, 2, BTN_SIZE, BTN_SIZE, MIN_BTN);
+    draw_text_centered(win.w - BTN_SIZE * 1.5 - 3, TITLE_HEIGHT / 2, FOREGROUND, "-");
     
     draw_line(0, 0, win.w, 0, BORDER);
     draw_line(0, 0, 0, win.h, BORDER);
@@ -48,6 +54,10 @@ int drag_window(struct msg *msg, struct user_window *win) {
                 destroy_window();
                 wait();
                 exit();
+            } else if(msg->mouse.x > win->w - BTN_SIZE * 2 - 2 &&
+                msg->mouse.x < win->w - BTN_SIZE - 2 && !win->dragging) {
+
+                minimize_window();
             } else {
                 win->dragging = 1;
                 win->drag_offset_x = msg->mouse.x;

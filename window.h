@@ -33,6 +33,7 @@ struct window {
     struct proc *owner;
     struct spinlock lock;
     struct msg_queue queue;
+    char* title;
 };
 
 #endif

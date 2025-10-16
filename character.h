@@ -1,10 +1,7 @@
 #ifndef __CHARACTER_H__
 #define __CHARACTER_H__
+#include "param.h"
 #include "types.h"
-
-#define CHARACTER_WIDTH 9
-#define CHARACTER_HEIGHT 18
-#define CHARACTER_NUMBER 95
 
 uchar character[CHARACTER_NUMBER][CHARACTER_HEIGHT][CHARACTER_WIDTH] = {
     {//

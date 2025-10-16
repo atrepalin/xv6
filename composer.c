@@ -11,8 +11,6 @@
 
 #define MAX_RECTS 128
 
-#define BACKGROUND PACK(255, 255, 255)
-
 struct rect {
     int x, y, w, h;
 };
@@ -22,8 +20,7 @@ struct rect_list {
     int count;
 } invalidated;
 
-struct window *head = 0;
-struct window *tail = 0;
+struct window *head = 0, *tail = 0;
 
 struct spinlock vram_lock;
 
@@ -33,12 +30,14 @@ extern int screen_w, screen_h;
 
 extern int mouse_x, mouse_y;
 
+extern struct window *progman_win;
+
 void initcomposer(void) {
     initlock(&vram_lock, "vram");
 
     backbuf = kmalloc(screen_w * screen_h * sizeof(struct rgb));
 
-    memset_fast_long(backbuf, BACKGROUND, screen_w * screen_h);
+    memset_fast_long(backbuf, 0, screen_w * screen_h);
 }
 
 void add_window(struct window *win) {
@@ -55,10 +54,14 @@ void add_window(struct window *win) {
     }
 
     release(&win->lock);
+
+    onaddwindow(win);
 }
 
 void destroy_window(struct window *win) {
     if (!win) return;
+
+    onremovewindow(win);
 
     acquire(&win->lock);
 
@@ -91,8 +94,32 @@ void destroy_window(struct window *win) {
 }
 
 void bring_to_front(struct window *win) {
-    if (head == tail || win == tail) return;
+    if (win == tail) return;
 
+    win->visible = 1;
+
+    struct window *prev = 0, *cur = head;
+
+    while (cur && cur != win) {
+        prev = cur;
+        cur = cur->next_z;
+    }
+
+    if (!cur) {
+        tail->next_z = win;
+        tail = win;
+        return;
+    }
+
+    if (prev) prev->next_z = cur->next_z;
+    else head = cur->next_z;
+
+    tail->next_z = cur;
+    tail = cur;
+    cur->next_z = 0;
+}
+
+void hide_window(struct window *win) {
     struct window *prev = 0, *cur = head;
 
     while (cur && cur != win) {
@@ -105,9 +132,10 @@ void bring_to_front(struct window *win) {
     if (prev) prev->next_z = cur->next_z;
     else head = cur->next_z;
 
-    tail->next_z = cur;
-    tail = cur;
+    tail = prev->next_z ? prev->next_z : prev;
+
     cur->next_z = 0;
+    cur->visible = 0;
 }
 
 int click_bring_to_front(void) {
@@ -121,7 +149,7 @@ int click_bring_to_front(void) {
         }
     }
 
-    if (target && target != tail) {
+    if (target && target != tail && target != progman_win) {
         acquire(&target->lock);
 
         bring_to_front(target);
@@ -175,12 +203,6 @@ void compose(void) {
         int y1 = (r->y + r->h > screen_h) ? screen_h : r->y + r->h;
 
         if (x0 >= x1 || y0 >= y1) continue;
-
-        for (int y = y0; y < y1; y++) {
-            uchar *dst = backbuf + (y * screen_w + x0) * sizeof(struct rgb);
-
-            memset_fast_long(dst, BACKGROUND, x1 - x0);
-        }
         
         for (struct window *win = head; win; win = win->next_z) {
             if (!win->visible) continue;

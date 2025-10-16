@@ -12,3 +12,7 @@
 #define NBUF         (MAXOPBLOCKS*3)  // size of disk block cache
 #define FSSIZE       1000  // size of file system in blocks
 
+
+#define CHARACTER_WIDTH 9
+#define CHARACTER_HEIGHT 18
+#define CHARACTER_NUMBER 95

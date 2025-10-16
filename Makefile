@@ -34,6 +34,7 @@ OBJS = \
 	window.o\
 	composer.o\
 	memory.o\
+	progman.o\
 
 # Cross-compiling (e.g., on Mac OS X)
 # TOOLPREFIX = i386-jos-elf

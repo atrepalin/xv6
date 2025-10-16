@@ -16,7 +16,7 @@ extern struct {
   struct spinlock lock;
 } ptable;
 
-extern struct window *tail;
+extern struct window *tail, *head, *progman_win;
 
 struct window *captured;
 
@@ -49,29 +49,49 @@ void wakeup_on_msg(struct proc *p) {
 void enqueue_msg(struct window *win, int captured, struct msg *m) {
     if (!win) return;
 
-    if (m->type > M_KEY_DOWN) {
-        m->mouse.x -= win->x;
-        m->mouse.y -= win->y;
+    if (win != progman_win) {
+        if (IS_MOUSE(m->type)) {
+            if((m->mouse.x < win->x || m->mouse.x >= win->x + win->w ||
+                m->mouse.y < win->y || m->mouse.y >= win->y + win->h || 
+                !win->visible) && !captured) {
+                goto progman;
+            } else {    
+                m->mouse.x -= win->x;
+                m->mouse.y -= win->y;
+            }
+        }
 
-        if((m->mouse.x < 0 || m->mouse.x >= win->w ||
-            m->mouse.y < 0 || m->mouse.y >= win->h) && 
-            !captured) return;
+        acquire(&win->queue.lock);
+
+        int next = (win->queue.tail + 1) % MSG_QUEUE_SIZE;
+
+        if (next != win->queue.head) {
+            win->queue.msgs[win->queue.tail] = *m;
+            win->queue.tail = next;
+
+            struct proc *p = win->owner;
+
+            wakeup_on_msg(p);
+        }
+
+        release(&win->queue.lock);
+
+        return;
     }
 
-    acquire(&win->queue.lock);
+progman:
+    if (IS_MOUSE(m->type)) {
+        for (struct window *win = head; win; win = win->next_z) {
+            if (win == progman_win || !win->visible) continue;
 
-    int next = (win->queue.tail + 1) % MSG_QUEUE_SIZE;
-
-    if (next != win->queue.head) {
-        win->queue.msgs[win->queue.tail] = *m;
-        win->queue.tail = next;
-
-        struct proc *p = win->owner;
-
-        wakeup_on_msg(p);
+            if (m->mouse.x >= win->x && m->mouse.x < win->x + win->w &&
+                m->mouse.y >= win->y && m->mouse.y < win->y + win->h) {
+                return;
+            }
+        }
     }
 
-    release(&win->queue.lock);
+    onmsg(m);
 }
 
 void send_msg(struct msg *msg) {

@@ -42,6 +42,9 @@ SYSCALL(move_window)
 SYSCALL(get_msg)
 SYSCALL(capture_window)
 SYSCALL(release_window)
+SYSCALL(minimize_window)
+SYSCALL(init_progman)
+SYSCALL(get_launch)
 
 .globl sys_create_window;
   sys_create_window:

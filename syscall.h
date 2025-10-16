@@ -31,6 +31,9 @@
 #define SYS_draw_text         29
 #define SYS_bring_to_front    30
 #define SYS_move_window       31
-#define SYS_get_msg           32
-#define SYS_capture_window    33
-#define SYS_release_window    34
+#define SYS_minimize_window   32
+#define SYS_get_msg           33
+#define SYS_capture_window    34
+#define SYS_release_window    35
+#define SYS_init_progman      36
+#define SYS_get_launch        37

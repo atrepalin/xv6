@@ -53,6 +53,7 @@ struct inode*   nameiparent(char*, char*);
 int             readi(struct inode*, char*, uint, uint);
 void            stati(struct inode*, struct stat*);
 int             writei(struct inode*, char*, uint, uint);
+struct inode*   iget(uint dev, uint inum);
 
 // ide.c
 void            ideinit(void);
@@ -97,6 +98,16 @@ void            add_window(struct window *win);
 void            bring_to_front(struct window *win);
 int             click_bring_to_front(void);
 void            destroy_window(struct window *win);
+void            hide_window(struct window *win);
+
+// progman.c
+void            onaddwindow(struct window *win);
+void            onremovewindow(struct window *win);
+void            onmsg(struct msg *msg);
+
+// window.c
+void            fill_rect(int x, int y, int w, int h, int r, int g, int b, struct window *win);
+void            draw_text(int x, int y, int r, int g, int b, const char *s, struct window *win);
 
 // lapic.c
 void            cmostime(struct rtcdate *r);
@@ -146,6 +157,7 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+struct proc*    allocproc(void);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

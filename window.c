@@ -12,10 +12,13 @@ int
 sys_create_window(void)
 {
     int x, y, w, h;
+    char *title;
+
     if (argint(0, &x) < 0) return -1;
     if (argint(1, &y) < 0) return -1;
     if (argint(2, &w) < 0) return -1;
     if (argint(3, &h) < 0) return -1;
+    if (argstr(4, &title) < 0) return -1;
 
     struct proc *p = myproc();
     if (p->win != 0)
@@ -32,6 +35,7 @@ sys_create_window(void)
     win->visible = 1;
     win->next_z = 0;
     win->owner = p;
+    win->title = title;
 
     win->queue.head = win->queue.tail = 0;
     initlock(&win->queue.lock, "msg_queue");
@@ -46,6 +50,8 @@ sys_create_window(void)
 
     add_window(win);
     p->win = win;
+
+    invalidate(win->x, win->y, win->w, win->h);
 
     return 0;
 }
@@ -109,24 +115,8 @@ sys_fill_window(void)
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-int
-sys_fill_rect(void)
-{
-    int x, y, w, h, r, g, b;
-
-    if (argint(0, &x) < 0) return -1;
-    if (argint(1, &y) < 0) return -1;
-    if (argint(2, &w) < 0) return -1;
-    if (argint(3, &h) < 0) return -1;
-    if (argint(4, &r) < 0) return -1;
-    if (argint(5, &g) < 0) return -1;
-    if (argint(6, &b) < 0) return -1;
-
-    struct proc *p = myproc();
-    if (!p->win) return -1;
-
-    struct window *win = p->win;
-
+void 
+fill_rect(int x, int y, int w, int h, int r, int g, int b, struct window *win) {
     acquire(&win->lock);
 
     if (x < 0) {
@@ -153,6 +143,27 @@ sys_fill_rect(void)
 
     invalidate(win->x + x, win->y + y, w, h);
     release(&win->lock);
+}
+
+int
+sys_fill_rect(void)
+{
+    int x, y, w, h, r, g, b;
+
+    if (argint(0, &x) < 0) return -1;
+    if (argint(1, &y) < 0) return -1;
+    if (argint(2, &w) < 0) return -1;
+    if (argint(3, &h) < 0) return -1;
+    if (argint(4, &r) < 0) return -1;
+    if (argint(5, &g) < 0) return -1;
+    if (argint(6, &b) < 0) return -1;
+
+    struct proc *p = myproc();
+    if (!p->win) return -1;
+
+    struct window *win = p->win;
+
+    fill_rect(x, y, w, h, r, g, b, win);
 
     return 0;
 }
@@ -236,6 +247,22 @@ sys_draw_line(void) {
     return 0;
 }
 
+void
+draw_text(int x, int y, int r, int g, int b, const char *s, struct window *win) {
+    int sx = x;
+
+    struct rgb color = RGB(r, g, b);
+
+    acquire(&win->lock);
+
+    for (int i = 0; i < strlen(s); i++) {
+        x = draw_char(win, x, y, s[i], color);
+    }
+    
+    invalidate(win->x + sx, win->y + y, x - sx + CHARACTER_WIDTH, CHARACTER_HEIGHT);
+    release(&win->lock);
+}
+
 int 
 sys_draw_text(void) {
     int x, y, r, g, b;
@@ -248,23 +275,12 @@ sys_draw_text(void) {
     if (argint(4, &b) < 0) return -1;
     if (argstr(5, &s) < 0) return -1;
 
-    struct rgb color = RGB(r, g, b);
-
     struct proc *p = myproc();
     if (!p->win) return -1;
 
     struct window *win = p->win;
 
-    int sx = x;
-
-    acquire(&win->lock);
-
-    for (int i = 0; i < strlen(s); i++) {
-        x = draw_char(p->win, x, y, s[i], color);
-    }
-    
-    invalidate(win->x + sx, win->y + y, x - sx + CHARACTER_WIDTH, CHARACTER_HEIGHT);
-    release(&win->lock);
+    draw_text(x, y, r, g, b, s, win);
 
     return 0;
 }
@@ -302,6 +318,22 @@ sys_move_window(void) {
 
     win->x = new_x;
     win->y = new_y;
+
+    invalidate(win->x, win->y, win->w, win->h);
+    release(&win->lock);
+
+    return 0;
+}
+
+int
+sys_minimize_window(void) {
+    struct proc *p = myproc();
+    if (!p->win) return -1;
+
+    struct window *win = p->win;
+
+    acquire(&win->lock);
+    hide_window(win);
 
     invalidate(win->x, win->y, win->w, win->h);
     release(&win->lock);

@@ -114,9 +114,12 @@ extern int sys_draw_line(void);
 extern int sys_draw_text(void);
 extern int sys_bring_to_front(void);
 extern int sys_move_window(void);
+extern int sys_minimize_window(void);
 extern int sys_get_msg(void);
 extern int sys_capture_window(void);
 extern int sys_release_window(void);
+extern int sys_init_progman(void);
+extern int sys_get_launch(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]     sys_fork,
@@ -151,9 +154,12 @@ static int (*syscalls[])(void) = {
 [SYS_draw_text]         sys_draw_text,
 [SYS_bring_to_front]    sys_bring_to_front,
 [SYS_move_window]       sys_move_window,
+[SYS_minimize_window]   sys_minimize_window,
 [SYS_get_msg]           sys_get_msg,
 [SYS_capture_window]    sys_capture_window,
-[SYS_release_window]    sys_release_window
+[SYS_release_window]    sys_release_window,
+[SYS_init_progman]      sys_init_progman,
+[SYS_get_launch]         sys_get_launch
 };
 
 void
