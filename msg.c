@@ -80,17 +80,6 @@ void enqueue_msg(struct window *win, int captured, struct msg *m) {
     }
 
 progman:
-    if (IS_MOUSE(m->type)) {
-        for (struct window *win = head; win; win = win->next_z) {
-            if (win == progman_win || !win->visible) continue;
-
-            if (m->mouse.x >= win->x && m->mouse.x < win->x + win->w &&
-                m->mouse.y >= win->y && m->mouse.y < win->y + win->h) {
-                return;
-            }
-        }
-    }
-
     onmsg(m);
 }
 

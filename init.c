@@ -13,8 +13,6 @@ extern int get_launch(char *name);
 int
 main(void)
 {
-  init_progman();
-
   int pid, ppid, wpid;
 
   if(open("console", O_RDWR) < 0){
@@ -39,19 +37,19 @@ main(void)
 
     ppid = fork();
     if (ppid == 0) {
+      init_progman();
+
       char launch_name[32];
 
-      for(;;) {
-        if(get_launch(launch_name)) {
-          printf(1, "program manager: launching %s\n", launch_name);
-          int pid = fork();
+      while(get_launch(launch_name)) {
+        printf(1, "program manager: launching %s\n", launch_name);
+        int pid = fork();
 
-          if(pid == 0){
-            char *argv[] = { launch_name, 0 };
-            exec(launch_name, argv);
-            printf(1, "program manager: exec %s failed\n", launch_name);
-            exit();
-          }
+        if(pid == 0){
+          char *argv[] = { launch_name, 0 };
+          exec(launch_name, argv);
+          printf(1, "program manager: exec %s failed\n", launch_name);
+          exit();
         }
       }
     }

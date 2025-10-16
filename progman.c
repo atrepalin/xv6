@@ -18,11 +18,12 @@ struct window *progman_win = 0;
 
 #define BAR_HEIGHT 30
 
-#define BACKGROUND PACK(255, 255, 255)
-#define BAR        100, 100, 255
-#define FOREGROUND 255, 255, 255
-#define TASK       70, 70, 200
-#define ICON       180, 180, 255
+#define BACKGROUND    PACK(255, 255, 255)
+#define BAR           100, 100, 255
+#define FOREGROUND    255, 255, 255
+#define DT_FOREGROUND 0,   0,   0
+#define TASK          70,  70,  200
+#define ICON          180, 180, 255
 
 #define MAX_TASKS 32
 
@@ -42,6 +43,7 @@ struct desktop_icon {
 };
 
 #define MAX_ICONS 64
+
 static struct desktop_icon icons[MAX_ICONS];
 static int icon_count = 0;
 
@@ -62,6 +64,10 @@ static int is_executable_inode(struct inode *ip) {
     return elf.magic == ELF_MAGIC;
 }
 
+const char *ignorable[] = {
+    "init"
+};
+
 void init_desktop(void)
 {
     struct inode *dp;
@@ -70,7 +76,7 @@ void init_desktop(void)
     int icon_x = ICON_START_X;
     int icon_y = ICON_START_Y;
 
-    dp = namei(".");
+    dp = namei("/");
     if (dp == 0) return;
 
     ilock(dp);
@@ -88,8 +94,10 @@ void init_desktop(void)
         ilock(ip);
 
         if (ip->type == T_FILE && is_executable_inode(ip)) {
-            if (strncmp(de.name, "init", 4) == 0) {
-                goto next;
+            for (int i = 0; i < sizeof(ignorable) / sizeof(ignorable[0]); i++) {
+                if (strncmp(de.name, ignorable[i], strlen(ignorable[i])) == 0) {
+                    goto next;
+                }
             }
 
             if (icon_count < MAX_ICONS) {
@@ -105,7 +113,7 @@ void init_desktop(void)
                 icon_y += ICON_H + ICON_PADDING_Y;
             }
 
-            if (icon_y + ICON_H > screen_h - 60) {
+            if (icon_y + ICON_H > screen_h - CHARACTER_HEIGHT - BAR_HEIGHT - 16) {
                 break;
             }
         }
@@ -133,43 +141,13 @@ void draw_desktop(void) {
         int text_x = ic->x + (ICON_W - text_w) / 2;
         int text_y = ic->y + ICON_H + 2;
 
-        draw_text(text_x, text_y, 0, 0, 0, namebuf, progman_win);
+        draw_text(text_x, text_y, DT_FOREGROUND, namebuf, progman_win);
     }
 
     invalidate(0, 0, screen_w, screen_h - 30);
 }
 
-void init_launch_q(void) {
-  initlock(&launchq.lock, "launchq");
-  launchq.has_task = 0;
-}
-
-void init_progman(void) {
-    progman_win = kmalloc(sizeof(struct window));
-
-    initlock(&progman_win->lock, "window");
-    progman_win->x = 0;
-    progman_win->y = 0;
-    progman_win->w = screen_w;
-    progman_win->h = screen_h;
-    progman_win->backbuf = kmalloc(screen_w * screen_h * sizeof(struct rgb));
-    progman_win->owner = 0;
-
-    memset_fast_long(progman_win->backbuf, BACKGROUND, screen_w * screen_h);
-
-    add_window(progman_win);
-
-    fill_rect(0, screen_h - BAR_HEIGHT, screen_w, BAR_HEIGHT, BAR, progman_win);
-
-    invalidate(0, 0, screen_w, screen_h);
-
-    init_desktop();
-    draw_desktop();
-
-    init_launch_q();
-}
-
-void redraw_taskbar(void) {
+void draw_taskbar(void) {
     fill_rect(0, screen_h - BAR_HEIGHT, screen_w, BAR_HEIGHT, BAR, progman_win);
 
     int x = 5;
@@ -191,6 +169,36 @@ void redraw_taskbar(void) {
     invalidate(0, screen_h - BAR_HEIGHT, screen_w, BAR_HEIGHT);
 }
 
+void init_launchq(void) {
+    initlock(&launchq.lock, "launchq");
+    launchq.has_task = 0;
+}
+
+void init_progman(void) {
+    progman_win = kmalloc(sizeof(struct window));
+
+    initlock(&progman_win->lock, "window");
+    progman_win->x = 0;
+    progman_win->y = 0;
+    progman_win->w = screen_w;
+    progman_win->h = screen_h;
+    progman_win->backbuf = kmalloc(screen_w * screen_h * sizeof(struct rgb));
+    progman_win->owner = 0;
+
+    memset_fast_long(progman_win->backbuf, BACKGROUND, screen_w * screen_h);
+
+    add_window(progman_win);
+
+    invalidate(0, 0, screen_w, screen_h);
+
+    init_desktop();
+    draw_desktop();
+
+    init_launchq();
+
+    draw_taskbar();
+}
+
 void onaddwindow(struct window *win) {
     if (win == progman_win) return;
 
@@ -198,7 +206,7 @@ void onaddwindow(struct window *win) {
         return;
 
     task_list[task_count++] = win;
-    redraw_taskbar();
+    draw_taskbar();
 }
 
 void onremovewindow(struct window *win) {
@@ -210,14 +218,21 @@ void onremovewindow(struct window *win) {
         }
     }
 
-    redraw_taskbar();
+    draw_taskbar();
 }
+
+struct proc *init_proc;
+
+extern void wait_for_msg(struct proc *p);
+extern void wakeup_on_msg(struct proc *p);
 
 void set_launch_request(const char *name) {
     acquire(&launchq.lock);
     safestrcpy(launchq.pending, name, sizeof(launchq.pending));
     launchq.has_task = 1;
     release(&launchq.lock);
+
+    wakeup_on_msg(init_proc);
 }
 
 void onmsg(struct msg *msg) {
@@ -225,8 +240,10 @@ void onmsg(struct msg *msg) {
         return;
         
     if (msg->mouse.y >= screen_h - BAR_HEIGHT) {
-        int index = msg->mouse.x / 100;
-        if (index < task_count) {
+        int x = msg->mouse.x;
+        int index = x / 100;
+
+        if (index < task_count && (x % 100) < 90) {
             struct window *target = task_list[index];
 
             acquire(&target->lock);
@@ -252,19 +269,21 @@ void onmsg(struct msg *msg) {
 int
 sys_init_progman(void) {
     init_progman();
+
+    init_proc = myproc();
     return 0;
 }
 
 int 
 sys_get_launch(void) {
     char *buf;
-    if (argptr(0, &buf, MAX_LAUNCH_NAME) < 0)
-        return -1;
+    if (argptr(0, &buf, MAX_LAUNCH_NAME) < 0) return 0;
 
     acquire(&launchq.lock);
     if (!launchq.has_task) {
         release(&launchq.lock);
-        return 0;
+        wait_for_msg(init_proc);
+        acquire(&launchq.lock);
     }
 
     safestrcpy(buf, launchq.pending, MAX_LAUNCH_NAME);
