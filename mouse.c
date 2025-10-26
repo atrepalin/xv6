@@ -16,6 +16,7 @@ static struct
 static int count;
 static int recovery;
 static int lastbtn, isdown, lastdowntick, lastmsgtick;
+static int lastid;
 
 int mouse_x, mouse_y;
 
@@ -159,8 +160,12 @@ void mouse_msg()
   m.mouse.x = mouse_x;
   m.mouse.y = mouse_y;
   m.mouse.button = btns;
+  m.mouse.id = lastid;
 
   send_msg(&m);
+
+  if (type == M_MOUSE_DOWN)
+    lastid = m.mouse.id;
 }
 
 void mouseintr(uint tick)

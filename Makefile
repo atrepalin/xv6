@@ -151,7 +151,7 @@ tags: $(OBJS) entryother.S _init
 vectors.S: vectors.pl
 	./vectors.pl > vectors.S
 
-ULIB = ulib.o usys.o printf.o scanf.o umalloc.o uwindow.o
+ULIB = ulib.o usys.o printf.o scanf.o umalloc.o uwindow.o widgets.o
 
 _%: %.o $(ULIB)
 	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
@@ -174,7 +174,7 @@ mkfs: mkfs.c fs.h
 .PRECIOUS: %.o
 
 UPROGS=\
-	_app\
+	_calc\
 	_cat\
 	_clear\
 	_echo\
@@ -262,9 +262,9 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 # check in that version.
 
 EXTRA=\
-	mkfs.c ulib.c user.h app.c cat.c echo.c forktest.c grep.c kill.c\
+	mkfs.c ulib.c user.h calc.c cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
-	printf.c scanf.c umalloc.c uwindow.c \
+	printf.c scanf.c umalloc.c uwindow.c widgets.c \
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 

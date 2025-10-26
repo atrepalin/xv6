@@ -14,10 +14,10 @@
 
 #define M_CUSTOM 8
 
+#define M_DRAW 9
+
 #define IS_MOUSE(type) type > M_KEY_DOWN && type < M_CUSTOM
 #define IS_KEY(type) type <= M_KEY_DOWN && type > M_NONE
-
-#define IS_ESC(msg) msg.type == M_KEY_DOWN && msg.key.charcode == 27
 
 #define BTN_LEFT 1
 #define BTN_RIGHT 2
@@ -33,6 +33,7 @@ struct msg {
         struct {
             int x, y;
             int button;
+            uint id;
         } mouse;
 
         struct {

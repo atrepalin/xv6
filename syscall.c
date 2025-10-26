@@ -159,7 +159,7 @@ static int (*syscalls[])(void) = {
 [SYS_capture_window]    sys_capture_window,
 [SYS_release_window]    sys_release_window,
 [SYS_init_progman]      sys_init_progman,
-[SYS_get_launch]         sys_get_launch
+[SYS_get_launch]        sys_get_launch
 };
 
 void

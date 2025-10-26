@@ -236,7 +236,7 @@ void set_launch_request(const char *name) {
 }
 
 void onmsg(struct msg *msg) {
-    if (msg->type != M_MOUSE_LEFT_CLICK)
+    if (msg->type != M_MOUSE_LEFT_CLICK || msg->mouse.id != 0)
         return;
         
     if (msg->mouse.y >= screen_h - BAR_HEIGHT) {

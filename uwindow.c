@@ -2,6 +2,7 @@
 #include "stat.h"
 #include "user.h"
 #include "character.h"
+#include "widgets.h"
 
 #define TITLE_HEIGHT 20
 #define BTN_SIZE     16
@@ -52,8 +53,6 @@ int drag_window(struct msg *msg, struct user_window *win) {
                 msg->mouse.x < win->w - 2 && !win->dragging) {
 
                 destroy_window();
-                wait();
-                exit();
             } else if(msg->mouse.x > win->w - BTN_SIZE * 2 - 2 &&
                 msg->mouse.x < win->w - BTN_SIZE - 2 && !win->dragging) {
 
@@ -91,10 +90,22 @@ int drag_window(struct msg *msg, struct user_window *win) {
     return 0;
 }
 
+int notify_widgets(struct msg *msg, struct user_window *win) {
+    struct widget *w = win->first;
+    while (w) {
+        if (w->handler && w->handler(msg, win, w))
+            return 1;
+            
+        w = w->next;
+    }
+    return 0;
+}
+
 typedef int (*msg_handler)(struct msg *msg, struct user_window *win);
 
 const msg_handler handlers[] = {
-    drag_window
+    drag_window,
+    notify_widgets
 };
     
 int dispatch_msg(struct msg *msg, struct user_window *win) {

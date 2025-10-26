@@ -73,7 +73,7 @@ kbdintr(void)
 
   while((*(c++) = kbdgetc()) >= 0);
 
-  consoleintr(getchar);
+  // consoleintr(getchar);
 
   idx = 0;
 }

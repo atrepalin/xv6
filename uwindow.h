@@ -3,11 +3,16 @@
 #include "types.h"
 #include "msg.h"
 
+struct widget;
+
 struct user_window {
     int x, y, w, h;
     int dragging;
     const char* title;
     int drag_offset_x, drag_offset_y;
+
+    struct widget *first;
+    struct widget *focused;
 };
 
 struct user_window create_window(int x, int y, int w, int h, 

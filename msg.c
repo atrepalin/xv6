@@ -58,6 +58,7 @@ void enqueue_msg(struct window *win, int captured, struct msg *m) {
             } else {    
                 m->mouse.x -= win->x;
                 m->mouse.y -= win->y;
+                m->mouse.id = (int)win;
             }
         }
 
@@ -81,6 +82,7 @@ void enqueue_msg(struct window *win, int captured, struct msg *m) {
 
 progman:
     onmsg(m);
+    m->mouse.id = 0;
 }
 
 void send_msg(struct msg *msg) {
