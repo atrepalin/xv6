@@ -8,7 +8,7 @@
 #define BTN_SIZE     16
 
 #define BAR        100, 100, 255
-#define ClOSE_BTN  255, 50,  50
+#define CLOSE_BTN  255, 50,  50
 #define MIN_BTN    70, 70, 200
 #define FOREGROUND 255, 255, 255
 #define BORDER     128, 128, 128
@@ -31,7 +31,7 @@ struct user_window create_window(int x, int y, int w, int h,
     fill_rect(0, 0, win.w, TITLE_HEIGHT, BAR);
     draw_text_centered(win.w / 2, TITLE_HEIGHT / 2, FOREGROUND, win.title);
     
-    fill_rect(win.w - (BTN_SIZE + 2), 2, BTN_SIZE, BTN_SIZE, ClOSE_BTN);
+    fill_rect(win.w - (BTN_SIZE + 2), 2, BTN_SIZE, BTN_SIZE, CLOSE_BTN);
     draw_text_centered(win.w - BTN_SIZE / 2 - 3, TITLE_HEIGHT / 2, FOREGROUND, "X");
 
     fill_rect(win.w - (BTN_SIZE + 2) * 2, 2, BTN_SIZE, BTN_SIZE, MIN_BTN);
