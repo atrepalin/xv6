@@ -11,10 +11,10 @@
 #define M_MOUSE_UP 5
 #define M_MOUSE_LEFT_CLICK 6
 #define M_MOUSE_RIGHT_CLICK 7
+#define M_MOUSE_SCROLL 8
 
-#define M_CUSTOM 8
-
-#define M_DRAW 9
+#define M_CUSTOM 9
+#define M_DRAW 10
 
 #define IS_MOUSE(type) type > M_KEY_DOWN && type < M_CUSTOM
 #define IS_KEY(type) type <= M_KEY_DOWN && type > M_NONE
@@ -33,6 +33,7 @@ struct msg {
         struct {
             int x, y;
             int button;
+            char scroll;
             uint id;
         } mouse;
 

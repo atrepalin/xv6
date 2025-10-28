@@ -10,6 +10,7 @@ static struct
 {
   int x_sgn, y_sgn, x_mov, y_mov;
   int l_btn, r_btn, m_btn;
+  char z_mov;
   int x_overflow, y_overflow;
   uint tick;
 } packet;
@@ -17,6 +18,7 @@ static int count;
 static int recovery;
 static int lastbtn, isdown, lastdowntick, lastmsgtick;
 static int lastid;
+static uchar mouse_id;
 
 int mouse_x, mouse_y;
 
@@ -57,29 +59,49 @@ uint mouse_read()
 
 void mouseinit(void)
 {
-  uchar statustemp;
+  uchar status;
 
   mouse_wait(1);
-  outb(0x64, 0xa8);
+  outb(0x64, 0xA8);
 
   mouse_wait(1);
   outb(0x64, 0x20);
   mouse_wait(0);
-  statustemp = (inb(0x60) | 2);
+  status = (inb(0x60) | 2);
   mouse_wait(0);
   outb(0x64, 0x60);
   mouse_wait(1);
-  outb(0x60, statustemp);
+  outb(0x60, status);
 
-  mouse_write(0xf6);
+  mouse_write(0xF6);
   mouse_read();
 
-  mouse_write(0xf3);
+  mouse_write(0xF3);
   mouse_read();
   mouse_write(10);
   mouse_read();
 
-  mouse_write(0xf4);
+  mouse_write(0xF3); 
+  mouse_read();
+  mouse_write(200);
+  mouse_read();
+
+  mouse_write(0xF3); 
+  mouse_read();
+  mouse_write(100);
+  mouse_read();
+
+  mouse_write(0xF3); 
+  mouse_read();
+  mouse_write(80);
+  mouse_read();
+
+
+  mouse_write(0xF2);
+  mouse_read();
+  mouse_id = mouse_read();
+
+  mouse_write(0xF4);
   mouse_read();
 
   initlock(&mouselock, "mouse");
@@ -87,7 +109,6 @@ void mouseinit(void)
 
   count = 0;
   lastdowntick = -1000;
-
   mouse_x = WIDTH / 2;
   mouse_y = HEIGHT / 2;
 }
@@ -98,6 +119,7 @@ void mouse_msg()
 
   if (packet.x_overflow || packet.y_overflow)
     return;
+
   int x = packet.x_sgn ? (0xffffff00 | (packet.x_mov & 0xff)) : (packet.x_mov & 0xff);
   int y = packet.y_sgn ? (0xffffff00 | (packet.y_mov & 0xff)) : (packet.y_mov & 0xff);
   packet.x_mov = x;
@@ -110,7 +132,11 @@ void mouse_msg()
 
   int type = M_NONE;
 
-  if (packet.x_mov || packet.y_mov)
+  if (packet.z_mov) {
+    type = M_MOUSE_SCROLL;
+    m.mouse.scroll = packet.z_mov;
+  }
+  else if (packet.x_mov || packet.y_mov)
   {
     if (packet.tick - lastmsgtick < 5)
       return;
@@ -168,67 +194,50 @@ void mouse_msg()
     lastid = m.mouse.id;
 }
 
-void mouseintr(uint tick)
-{
+void mouseintr(uint tick) {
   acquire(&mouselock);
   int state;
-  while (((state = inb(0x64)) & 1) == 1)
-  {
+  while ((state = inb(0x64)) & 1) {
     int data = inb(0x60);
     count++;
 
-    if (recovery == 0 && (data & 255) == 0)
-      recovery = 1;
-    else if (recovery == 1 && (data & 255) == 0)
-      recovery = 2;
-    else if ((data & 255) == 12)
-      recovery = 0;
-    else
-      recovery = -1;
-
-    switch (count)
-    {
+    switch (count) {
     case 1:
-      if (data & 0x08)
-      {
-        packet.y_overflow = (data >> 7) & 0x1;
-        packet.x_overflow = (data >> 6) & 0x1;
-        packet.y_sgn = (data >> 5) & 0x1;
-        packet.x_sgn = (data >> 4) & 0x1;
-        packet.m_btn = (data >> 2) & 0x1;
-        packet.r_btn = (data >> 1) & 0x1;
-        packet.l_btn = (data >> 0) & 0x1;
-        break;
-      }
-      else
-      {
+      if (data & 0x08) {
+        packet.y_overflow = (data >> 7) & 1;
+        packet.x_overflow = (data >> 6) & 1;
+        packet.y_sgn = (data >> 5) & 1;
+        packet.x_sgn = (data >> 4) & 1;
+        packet.m_btn = (data >> 2) & 1;
+        packet.r_btn = (data >> 1) & 1;
+        packet.l_btn = (data >> 0) & 1;
+      } else {
         count = 0;
-        break;
       }
-
+      break;
     case 2:
       packet.x_mov = data;
       break;
     case 3:
       packet.y_mov = data;
-      packet.tick = tick;
+      if (mouse_id == 0) {
+        packet.z_mov = 0;
+        packet.tick = tick;
+        mouse_msg();
+        count = 0;
+      }
+      break;
+    case 4:
+      if (mouse_id == 3 || mouse_id == 4) {
+        packet.z_mov = (char)data;
+        packet.tick = tick;
+        mouse_msg();
+      }
+      count = 0;
       break;
     default:
       count = 0;
-      break;
-    }
-
-    if (recovery == 2)
-    {
-      count = 0;
-      recovery = -1;
-    }
-    else if (count == 3)
-    {
-      count = 0;
-      mouse_msg();
     }
   }
-
   release(&mouselock);
 }

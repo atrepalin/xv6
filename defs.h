@@ -180,6 +180,7 @@ void            initsleeplock(struct sleeplock*, char*);
 // string.c
 int             memcmp(const void*, const void*, uint);
 void*           memmove(void*, const void*, uint);
+void*           memmove_safe(void*, const void*, uint);
 void*           memset(void*, int, uint);
 char*           safestrcpy(char*, const char*, int);
 int             strlen(const char*);

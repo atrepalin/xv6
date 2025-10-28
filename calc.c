@@ -226,7 +226,7 @@ void on_text_change(struct widget *tb, const char *text) {
 void on_symbol(struct widget *btn) {
     int len = strlen(expr);
     if (len < sizeof(expr) - 1) {
-        expr[len] = btn->text[0];
+        expr[len] = btn->has_text.text[0];
         expr[len + 1] = 0;
         set_text(textbox, expr);
     }

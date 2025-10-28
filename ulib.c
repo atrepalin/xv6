@@ -104,3 +104,22 @@ memmove(void *vdst, const void *vsrc, int n)
     *dst++ = *src++;
   return vdst;
 }
+
+void*
+memmove_safe(void *vdst, const void *vsrc, int n)
+{
+  char *dst = vdst;
+  const char *src = vsrc;
+
+  if (src < dst && src + n > dst) {
+    src += n;
+    dst += n;
+    while (n-- > 0)
+      *--dst = *--src;
+  } else {
+    while (n-- > 0)
+      *dst++ = *src++;
+  }
+
+  return vdst;
+}

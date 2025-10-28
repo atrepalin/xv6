@@ -175,6 +175,7 @@ mkfs: mkfs.c fs.h
 
 UPROGS=\
 	_calc\
+	_demo\
 	_cat\
 	_clear\
 	_echo\
