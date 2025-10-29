@@ -35,7 +35,9 @@ sys_create_window(void)
     win->visible = 1;
     win->next_z = 0;
     win->owner = p;
-    win->title = title;
+    win->title = kmalloc(strlen(title) + 1);
+
+    strncpy(win->title, title, strlen(title) + 1);
 
     win->queue.head = win->queue.tail = 0;
     initlock(&win->queue.lock, "msg_queue");

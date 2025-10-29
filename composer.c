@@ -87,6 +87,9 @@ void destroy_window(struct window *win) {
 
     release(&win->lock);
 
+    if (win->title)
+        kmfree(win->title);
+
     if (win->backbuf)
         kmfree(win->backbuf);
 
