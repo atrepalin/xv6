@@ -101,6 +101,7 @@ int button_handler(struct msg *msg, struct user_window *win, struct widget *self
     if (msg->type == M_DRAW) {
         fill_rect(self->x, self->y, self->w, self->h, 80, 80, 180);
         draw_text_centered(self->x + self->w / 2, self->y + self->h / 2, 255, 255, 255, slice_text(self));
+
         return 1;
     }
 
@@ -129,6 +130,7 @@ int textbox_handler(struct msg *msg, struct user_window *win, struct widget *sel
 draw:
         fill_rect(self->x, self->y, self->w, self->h, 60, 60, 60);        
         draw_text(self->x + 4, self->y + self->h / 2 - CHARACTER_HEIGHT / 2, 255, 255, 255, slice_text(self));
+        
         return 1;
     }
 
@@ -272,7 +274,8 @@ void wrap_text(struct textblock_internal *tb, int max_width) {
         free(*buffer);
 
     int chars_per_line = (max_width - PADDING * 2 - 6) / CHARACTER_WIDTH;
-    int buf_size = strlen(tb->text) + min(MAX_TEXT / chars_per_line, MAX_LINES) + 1;
+    int len = strlen(tb->text);
+    int buf_size = len + min(len / chars_per_line, MAX_LINES) + 1;
 
     *buffer = malloc(buf_size);
     strcpy(*buffer, tb->text);

@@ -44,26 +44,26 @@ char* int_to_str(int xx) {
 char*
 concat(int count, ...)
 {
-  static char buf[256];
-  memset(buf, 0, sizeof(buf));
+    static char buf[256];
+    memset(buf, 0, sizeof(buf));
 
-  char *dst = buf;
-  char *s;
-  uint *ap;
+    char *dst = buf;
+    char *s;
+    uint *ap;
 
-  ap = (uint*)(void*)&count + 1;
+    ap = (uint*)(void*)&count + 1;
 
-  for (int i = 0; i < count; i++) {
-    s = (char*)*ap++;
-    if (s == 0)
-      continue;
+    for (int i = 0; i < count; i++) {
+        s = (char*)*ap++;
+        if (s == 0)
+        continue;
 
-    while (*s && (dst - buf) < sizeof(buf) - 1)
-      *dst++ = *s++;
-  }
+        while (*s && (dst - buf) < sizeof(buf) - 1)
+        *dst++ = *s++;
+    }
 
-  *dst = '\0';
-  return buf;
+    *dst = '\0';
+    return buf;
 }
 
 struct widget *label_value;
@@ -106,6 +106,9 @@ int main() {
     struct widget *scroll =
         create_scrollbar(180, 30, 16, 120, on_scroll_change);
 
+    struct widget *scroll2 =
+        create_scrollbar(10, 170, 190, 16, 0);
+
     const char *init_text =
         "This is a multiline\n"
         "text block example.\n"
@@ -122,6 +125,7 @@ int main() {
     add_widget(&win, textbox_input);
     add_widget(&win, btn_clear);
     add_widget(&win, scroll);
+    add_widget(&win, scroll2);
     add_widget(&win, textblock_main);
 
     while (get_msg(&msg, 1)) {

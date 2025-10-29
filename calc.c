@@ -91,7 +91,10 @@ float apply_op(float a, float b, char op, int *err) {
         case '-': return a - b;
         case '*': return a * b;
         case '/': 
-            if (b == 0) { *err = 1; return 0; }
+            if (b == 0) { 
+                *err = 1; 
+                return 0; 
+            }
             return a / b;
     }
     return 0;

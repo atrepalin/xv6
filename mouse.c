@@ -96,7 +96,6 @@ void mouseinit(void)
   mouse_write(80);
   mouse_read();
 
-
   mouse_write(0xF2);
   mouse_read();
   mouse_id = mouse_read();
