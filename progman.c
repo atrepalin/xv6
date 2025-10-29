@@ -197,6 +197,8 @@ void init_progman(void) {
     init_launchq();
 
     draw_taskbar();
+
+    cprintf("program manager started\n");
 }
 
 void onaddwindow(struct window *win) {

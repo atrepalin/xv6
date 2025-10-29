@@ -15,6 +15,25 @@
 
 extern int sys_create_window(int, int, int, int, const char*);
 
+static void draw_window(struct user_window* win) {
+    fill_window(win->r, win->g, win->b);
+
+    fill_rect(0, 0, win->w, TITLE_HEIGHT, BAR);
+    draw_text_centered(win->w / 2, TITLE_HEIGHT / 2, FOREGROUND, win->title);
+    
+    fill_rect(win->w - (BTN_SIZE + 2), 2, BTN_SIZE, BTN_SIZE, CLOSE_BTN);
+    draw_text_centered(win->w - BTN_SIZE / 2 - 3, TITLE_HEIGHT / 2, FOREGROUND, "X");
+
+    fill_rect(win->w - (BTN_SIZE + 2) * 2, 2, BTN_SIZE, BTN_SIZE, MIN_BTN);
+    draw_text_centered(win->w - BTN_SIZE * 1.5 - 3, TITLE_HEIGHT / 2, FOREGROUND, "-");
+    
+    draw_line(0, 0, win->w, 0, BORDER);
+    draw_line(0, 0, 0, win->h, BORDER);
+    draw_line(win->w - 1, 0, win->w - 1, win->h, BORDER);
+    draw_line(0, win->h - 1, win->w, win->h - 1, BORDER);
+    draw_line(0, TITLE_HEIGHT, win->w, TITLE_HEIGHT, BORDER);
+}
+
 struct user_window create_window(int x, int y, int w, int h, 
     const char *title, uchar r, uchar g, uchar b) {
     struct user_window win = {
@@ -22,26 +41,14 @@ struct user_window create_window(int x, int y, int w, int h,
         .y = y,
         .w = w,
         .h = h,
-        .title = title
+        .title = title,
+        .r = r,
+        .g = g,
+        .b = b
     };
 
     sys_create_window(win.x, win.y, win.w, win.h, title);
-    fill_window(r, g, b);
-
-    fill_rect(0, 0, win.w, TITLE_HEIGHT, BAR);
-    draw_text_centered(win.w / 2, TITLE_HEIGHT / 2, FOREGROUND, win.title);
-    
-    fill_rect(win.w - (BTN_SIZE + 2), 2, BTN_SIZE, BTN_SIZE, CLOSE_BTN);
-    draw_text_centered(win.w - BTN_SIZE / 2 - 3, TITLE_HEIGHT / 2, FOREGROUND, "X");
-
-    fill_rect(win.w - (BTN_SIZE + 2) * 2, 2, BTN_SIZE, BTN_SIZE, MIN_BTN);
-    draw_text_centered(win.w - BTN_SIZE * 1.5 - 3, TITLE_HEIGHT / 2, FOREGROUND, "-");
-    
-    draw_line(0, 0, win.w, 0, BORDER);
-    draw_line(0, 0, 0, win.h, BORDER);
-    draw_line(win.w - 1, 0, win.w - 1, win.h, BORDER);
-    draw_line(0, win.h - 1, win.w, win.h - 1, BORDER);
-    draw_line(0, TITLE_HEIGHT, win.w, TITLE_HEIGHT, BORDER);
+    draw_window(&win);
 
     return win;
 }
@@ -118,4 +125,20 @@ int dispatch_msg(struct msg *msg, struct user_window *win) {
 
 int draw_text_centered(int x, int y, uchar r, uchar g, uchar b, const char *s) {
     return draw_text(x - strlen(s) * CHARACTER_WIDTH / 2, y - CHARACTER_HEIGHT / 2, r, g, b, s);
+}
+
+void redraw_window(struct user_window *win) {
+    draw_window(win);
+
+    struct msg msg = { 
+        .type = M_DRAW
+    };
+
+    struct widget *w = win->first;
+    while (w) {
+        if (w->handler)
+            w->handler(&msg, win, w);
+            
+        w = w->next;
+    }
 }

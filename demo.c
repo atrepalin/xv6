@@ -71,7 +71,7 @@ struct widget *textbox_input;
 struct widget *textblock_main;
 
 void on_button_click(struct widget *btn) {
-    printf("Button clicked: %s\n", btn->has_text.text);
+    printf("Button clicked: %s\n", btn->text);
     set_text(textblock_main, "");
 }
 

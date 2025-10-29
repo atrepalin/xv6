@@ -18,8 +18,7 @@ void add_widget(struct user_window *win, struct widget *w)
         cur->next = w;
     }
 
-    struct msg msg = { .type = M_DRAW };
-    w->handler(&msg, win, w);
+    invalidate_widget(w);
 }
 
 void remove_widget(struct widget *w) {
@@ -45,6 +44,14 @@ void focus_widget(struct widget *w) {
         w->win->focused = w;
 }
 
+void invalidate_widget(struct widget *w) {
+    struct msg msg = { 
+        .type = M_DRAW 
+    };
+
+    w->handler(&msg, w->win, w);
+}
+
 static void textblock_set_text(struct widget *w, const char *text) {
     struct textblock_internal *tb = &w->textblock;
     strcpy(tb->text, text);
@@ -60,21 +67,20 @@ void set_text(struct widget *w, const char *text) {
         case LABEL:
         case TEXTBOX:
         case BUTTON:
-            strcpy(w->has_text.text, text);
+            strcpy(w->text, text);
             break;
     } 
     
-    struct msg msg = { .type = M_DRAW };
-    w->handler(&msg, w->win, w);
+    invalidate_widget(w);
 }
 
 char* slice_text(struct widget *w) {
     int max_chars = (w->w - 8) / CHARACTER_WIDTH;
 
     static char buf[64];
-    int len = strlen(w->has_text.text);
+    int len = strlen(w->text);
     if (len > max_chars) len = max_chars;
-    memmove(buf, w->has_text.text, len);
+    memmove(buf, w->text, len);
     buf[len] = '\0';
 
     return buf;
@@ -84,6 +90,7 @@ int label_handler(struct msg *msg, struct user_window *win, struct widget *self)
     if (msg->type == M_DRAW) {
         fill_rect(self->x, self->y, self->w, self->h, 60, 60, 60);
         draw_text(self->x + 4, self->y + self->h / 2 - CHARACTER_HEIGHT / 2, 255, 255, 255, slice_text(self));
+
         return 1;
     }
 
@@ -125,32 +132,37 @@ draw:
         return 1;
     }
 
-    if (msg->type == M_MOUSE_LEFT_CLICK && self->focusable) {
+    if (msg->type == M_MOUSE_LEFT_CLICK) {
         int mx = msg->mouse.x, my = msg->mouse.y;
         if (mx >= self->x && mx <= self->x + self->w && my >= self->y && my <= self->y + self->h) {
-            win->focused = self;
+            if (self->focusable)
+                win->focused = self;
+
+            return 1;
         }
     }
 
     if (msg->type == M_KEY_DOWN && win->focused == self) {
-        uint len = strlen(self->has_text.text);
+        uint len = strlen(self->text);
 
         if (msg->key.charcode == 8 && len > 0) {
-            self->has_text.text[len - 1] = '\0';
+            self->text[len - 1] = '\0';
         }
-        else if (msg->key.charcode >= 32 && len < sizeof(self->has_text.text) - 1) {
-            self->has_text.text[len++] = msg->key.charcode;
-            self->has_text.text[len] = '\0';
+        else if (msg->key.charcode >= 32 && len < sizeof(self->text) - 1) {
+            self->text[len++] = msg->key.charcode;
+            self->text[len] = '\0';
+        } else {
+            return 1;
         }
 
-        if (strlen(self->has_text.text) > max_chars) {
-            self->has_text.text[max_chars] = '\0';
+        if (strlen(self->text) > max_chars) {
+            self->text[max_chars] = '\0';
         }
 
         textbox_change_cb cb = (textbox_change_cb)self->userdata;
 
         if (cb) 
-            cb(self, self->has_text.text);
+            cb(self, self->text);
 
         goto draw;
     }
@@ -158,7 +170,7 @@ draw:
     return 0;
 }
 
-#define CLAMP(x, a, b) ((x) < (a) ? (a) : ((x) > (b) ? (b) : (x)))
+#define clamp(x, a, b) ((x) < (a) ? (a) : ((x) > (b) ? (b) : (x)))
 
 int scrollbar_handler(struct msg *msg, struct user_window *win, struct widget *self) {
     float *value = &self->scrollbar.value;
@@ -205,6 +217,8 @@ draw:
             self->scrollbar.dragging = 1;
             drag_offset = vertical ? (my - ty) : (mx - tx);
         }
+
+        return 1;
     }
 
     if (msg->type == M_MOUSE_UP) {
@@ -212,11 +226,16 @@ draw:
     }
 
     if (msg->type == M_MOUSE_MOVE && self->scrollbar.dragging) {
+        float prev_value = *value;
+
         int bar_size = vertical ? self->h : self->w;
         int thumb_size = (bar_size / 5);
         int pos = vertical ? (my - self->y - drag_offset) : (mx - self->x - drag_offset);
         *value = (float)pos / (float)(bar_size - thumb_size);
-        *value = CLAMP(*value, 0.0f, 1.0f);
+        *value = clamp(*value, 0.0f, 1.0f);
+
+        if (*value == prev_value)
+            return 1;
 
         scroll_change_cb cb = (scroll_change_cb)self->userdata;
         if (cb) 
@@ -226,8 +245,13 @@ draw:
     }
 
     if (msg->type == M_MOUSE_SCROLL && inside) {
+        float prev_value = *value;
+
         float delta = (msg->mouse.scroll > 0) ? -0.05f : 0.05f;
-        *value = CLAMP(*value + delta, 0.0f, 1.0f);
+        *value = clamp(*value + delta, 0.0f, 1.0f);
+
+        if (*value == prev_value)
+            return 1;
 
         scroll_change_cb cb = (scroll_change_cb)self->userdata;
         if (cb) 
@@ -239,17 +263,25 @@ draw:
     return 0;
 }
 
-void wrap_text(struct textblock_internal *tb, int max_width) {
-    static char text[1024];
+#define min(a, b) ((a) < (b) ? (a) : (b))
 
-    strcpy(text, tb->text);
+void wrap_text(struct textblock_internal *tb, int max_width) {
+    char **buffer = &tb->buffer;
+
+    if (*buffer)
+        free(*buffer);
+
+    int chars_per_line = (max_width - PADDING * 2 - 6) / CHARACTER_WIDTH;
+    int buf_size = strlen(tb->text) + min(MAX_TEXT / chars_per_line, MAX_LINES) + 1;
+
+    *buffer = malloc(buf_size);
+    strcpy(*buffer, tb->text);
 
     tb->line_count = 0;
 
-    char *s = text;
+    char *s = *buffer;
     while (*s && tb->line_count < MAX_LINES) {
         char *line_start = s;
-        int width = 0;
         int last_space = -1;
         int i = 0;
 
@@ -261,8 +293,7 @@ void wrap_text(struct textblock_internal *tb, int max_width) {
                 goto next_line;
             }
 
-            width += CHARACTER_WIDTH;
-            if (width > max_width - PADDING * 2 - 6) {
+            if (i >= chars_per_line) {
                 if (last_space >= 0) {
                     s[last_space] = '\0';
                     tb->lines[tb->line_count++] = line_start;
@@ -328,11 +359,15 @@ draw:
     }
 
     if (msg->type == M_MOUSE_SCROLL && inside && focused) {
+        float prev_scroll = tb->scroll;
+
         tb->scroll += (msg->mouse.scroll < 0 ? -0.05f : 0.05f);
-        if (tb->scroll < 0) tb->scroll = 0;
-        if (tb->scroll > 1) tb->scroll = 1;
+        tb->scroll = clamp(tb->scroll, 0.0f, 1.0f);
         
-        goto draw;
+        if (prev_scroll != tb->scroll)
+            goto draw;
+
+        return 1;
     }
 
     if (msg->type == M_MOUSE_LEFT_CLICK && inside) {
@@ -355,6 +390,8 @@ draw:
         } else if (msg->key.charcode >= 32 && len < MAX_TEXT - 1) {
             tb->text[len++] = msg->key.charcode;
             tb->text[len] = '\0';
+        } else {
+            return 1;
         }
 
         wrap_text(tb, self->w);
@@ -375,7 +412,7 @@ struct widget *create_label(int x, int y, int w, int h, const char *text) {
     lbl->y = y;
     lbl->w = w;
     lbl->h = h;
-    strcpy(lbl->has_text.text, text);
+    strcpy(lbl->text, text);
     lbl->handler = label_handler;
     lbl->type = LABEL;
     return lbl;
@@ -388,7 +425,7 @@ struct widget *create_button(int x, int y, int w, int h, const char *text, butto
     btn->w = w;
     btn->h = h;
     btn->focusable = 1;
-    strcpy(btn->has_text.text, text);
+    strcpy(btn->text, text);
     btn->handler = button_handler;
     btn->userdata = cb;
     btn->type = BUTTON;
@@ -402,7 +439,7 @@ struct widget *create_textbox(int x, int y, int w, int h, const char *text, text
     tb->w = w;
     tb->h = h;
     tb->focusable = 1;
-    strcpy(tb->has_text.text, text);
+    strcpy(tb->text, text);
     tb->handler = textbox_handler;
     tb->userdata = cb;
     tb->type = TEXTBOX;
@@ -432,6 +469,7 @@ struct widget *create_textblock(int x, int y, int w, int h, const char *text, te
     tb->handler = textblock_handler;
     tb->userdata = cb;
     tb->type = TEXTBLOCK;
+    tb->textblock.buffer = 0;
     strcpy(tb->textblock.text, text);
     wrap_text(&tb->textblock, w);
     return tb;

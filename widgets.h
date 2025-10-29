@@ -8,17 +8,18 @@ struct user_window;
 
 typedef int (*widget_msg_handler)(struct msg *msg, struct user_window *win, struct widget *self);
 
+#define PADDING 4
+#define MAX_TEXT 1024
+#define MAX_LINES 256
+
 struct textblock_internal {
-    char text[1024];
-    char *lines[256];
+    char text[MAX_TEXT];
+    char *buffer;
+    char *lines[MAX_LINES];
     int line_count;
     float scroll;
     char dragging;
 };
-
-#define PADDING 4
-#define MAX_TEXT 1024
-#define MAX_LINES 256
 
 struct widget {
     int x, y, w, h;
@@ -30,9 +31,7 @@ struct widget {
     enum { LABEL, BUTTON, TEXTBOX, SCROLLBAR, TEXTBLOCK } type;
 
     union {
-        struct {
-            char text[64];
-        } has_text;
+        char text[64];
 
         struct {
             float value;
@@ -47,6 +46,8 @@ void add_widget(struct user_window *win, struct widget *w);
 void remove_widget(struct widget *w);
 
 void focus_widget(struct widget *w);
+void invalidate_widget(struct widget *w);
+
 void set_text(struct widget *w, const char *text);
 
 typedef void (*button_click_cb)(struct widget *btn);
