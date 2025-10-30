@@ -103,6 +103,10 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
+extern int sys_transmit(void);
+extern int sys_receive(void);
+extern int sys_get_mac(void);
+extern int sys_get_ip(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -126,6 +130,11 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
+
+[SYS_transmit] sys_transmit,
+[SYS_receive]  sys_receive,
+[SYS_get_mac]  sys_get_mac,
+[SYS_get_ip]   sys_get_ip
 };
 
 void

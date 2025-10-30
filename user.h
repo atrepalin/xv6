@@ -23,6 +23,10 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+void transmit(const void*, int);
+int receive(uint8_t*, int);
+void get_mac(uint8_t[6]);
+void get_ip(uint8_t[4]);
 
 // ulib.c
 int stat(const char*, struct stat*);

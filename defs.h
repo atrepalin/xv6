@@ -188,3 +188,9 @@ void            clearpteu(pde_t *pgdir, char *uva);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+struct pci_func;
+
+// pci.c
+int             pci_init(void);
+void            pci_func_enable(struct pci_func *f);

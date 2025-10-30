@@ -27,6 +27,9 @@ OBJS = \
 	uart.o\
 	vectors.o\
 	vm.o\
+	pci.o\
+	e1000.o\
+	net.o\
 
 # Cross-compiling (e.g., on Mac OS X)
 # TOOLPREFIX = i386-jos-elf
@@ -76,7 +79,7 @@ AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
-CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
+CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -fno-omit-frame-pointer
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
 # FreeBSD ld wants ``elf_i386_fbsd''
@@ -166,6 +169,7 @@ mkfs: mkfs.c fs.h
 .PRECIOUS: %.o
 
 UPROGS=\
+	_ping\
 	_cat\
 	_echo\
 	_forktest\
@@ -219,10 +223,28 @@ QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
 ifndef CPUS
 CPUS := 2
 endif
-QEMUOPTS = -drive file=fs.img,index=1,media=disk,format=raw -drive file=xv6.img,index=0,media=disk,format=raw -smp $(CPUS) -m 512 $(QEMUEXTRA)
+
+QEMUNET = -device e1000,netdev=net0,mac=52:54:00:12:34:56 \
+  		  -netdev tap,id=net0,ifname=tap0,script=no,downscript=no \
+		  -net user
+
+QEMUOPTS = -drive file=fs.img,index=1,media=disk,format=raw \
+           -drive file=xv6.img,index=0,media=disk,format=raw \
+           -smp $(CPUS) -m 512 $(QEMUEXTRA) -vga std  $(QEMUNET)
 
 qemu: fs.img xv6.img
 	$(QEMU) -serial mon:stdio $(QEMUOPTS)
+
+net:
+	sudo ip tuntap del mode tap name tap0
+	sudo ip tuntap add mode tap name tap0
+	sudo ip addr add 10.0.2.1/24 dev tap0
+	sudo ip link set tap0 up
+	sudo ip link set tap0 promisc on
+	sudo tcpdump -i tap0 -n -e -xx
+
+ping:
+	sudo ./ping.py
 
 qemu-memfs: xv6memfs.img
 	$(QEMU) -drive file=xv6memfs.img,index=0,media=disk,format=raw -smp $(CPUS) -m 256

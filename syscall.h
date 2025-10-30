@@ -20,3 +20,8 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
+
+#define SYS_transmit 22
+#define SYS_receive  23
+#define SYS_get_mac  24
+#define SYS_get_ip   25
