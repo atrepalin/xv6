@@ -14,6 +14,7 @@
  * R/clr - register is read only and is cleared when read
  * A - register array
  */
+#define STATUS   0x00008 / 4  /* Device Status - RO */
 
 #define E1000_STATUS   0x00008 / 4  /* Device Status - RO */
 #define E1000_TCTL     0x00400 / 4  /* TX Control - RW */
@@ -22,7 +23,7 @@
 #define E1000_TDBAH    0x03804 / 4  /* TX Descriptor Base Address High - RW */
 #define E1000_TDLEN    0x03808 / 4  /* TX Descriptor Length - RW */
 #define E1000_TDH      0x03810 / 4  /* TX Descriptor Head - RW */
-#define E1000_TDT      0x03818 / 4 /* TX Descripotr Tail - RW */
+#define E1000_TDT      0x03818 / 4  /* TX Descripotr Tail - RW */
 #define E1000_RCTL     0x00100 / 4  /* RX Control - RW */
 #define E1000_RA       0x05400 / 4  /* Receive Address - RW Array */
 #define E1000_RAL      0x05400 / 4  /* Receive Address Low - RW */
@@ -51,7 +52,7 @@
 #define E1000_RCTL_EN             0x00000002    /* enable */
 #define E1000_RCTL_SBP            0x00000004    /* store bad packet */
 #define E1000_RCTL_UPE            0x00000008    /* unicast promiscuous enable */
-#define E1000_RCTL_MPE            0x00000010    /* multicast promiscuous enab */
+#define E1000_RCTL_MPE            0x00000010    /* multicast promiscuous enable */
 #define E1000_RCTL_LPE            0x00000020    /* long packet enable */
 #define E1000_RCTL_LBM_NO         0x00000000    /* no loopback mode */
 #define E1000_RCTL_LBM_MAC        0x00000040    /* MAC loopback mode */
@@ -147,8 +148,6 @@
 
 #define DATA_SIZE 4096
 
-////
-
 /* Receive Descriptor */
 struct e1000_rx_desc {
     uint64_t buffer_addr; /* Address of the descriptor's data buffer */
@@ -158,8 +157,6 @@ struct e1000_rx_desc {
     uint8_t errors;      /* Descriptor Errors */
     uint16_t special;
 };
-
-///
 
 struct e1000_tx_desc {
     uint64_t buffer_addr;       /* Address of the descriptor's data buffer */
@@ -188,11 +185,9 @@ struct e1000_data {
 
 #define VALUEATMASK(value, mask) value * ((mask) & ~((mask) << 1))
 
-#define STATUS   0x00008  /* Device Status - RO */
-
 int e1000_attach(struct pci_func *pcif);
-void e1000_transmit(const char *buf, unsigned int len);
-int e1000_receive(char *buf, unsigned int len);
+void e1000_transmit(const char *buf, size_t length);
+int e1000_receive(char *buf, size_t length);
 void e1000_get_mac(uint8_t *mac);
-
-#endif	// JOS_KERN_E1000_H
+void e1000_get_ip(uint8_t *ip);
+#endif

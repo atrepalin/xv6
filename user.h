@@ -23,8 +23,8 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-void transmit(const void*, int);
-int receive(uint8_t*, int);
+void transmit(const void*, size_t);
+int receive(uint8_t*, size_t);
 void get_mac(uint8_t[6]);
 void get_ip(uint8_t[4]);
 

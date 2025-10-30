@@ -34,14 +34,12 @@ int sys_get_mac(void) {
   return 0;
 }
 
-const uint8_t ip[4] = {10, 0, 2, 15};
-
 int sys_get_ip(void) {
   char* buf;
 
   if (argptr(0, &buf, 4) < 0) return -1;
 
-  memmove(buf, ip, 4);
+  e1000_get_ip((uint8_t*)buf);
 
   return 0;
 }

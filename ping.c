@@ -69,9 +69,9 @@ static uint16_t checksum(void *vdata, size_t length) {
     return ~acc;
 }
 
-char* parse_payload(uint8_t *payload, int payload_len) {
+char* parse_payload(uint8_t *payload, size_t payload_len) {
     static char tmp[65];
-    int i;
+    size_t i;
 
     for(i = 0; i < payload_len && i < 64; i++) {
         if(payload[i] >= 32 && payload[i] <= 126)

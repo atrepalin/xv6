@@ -70,7 +70,6 @@ static int pci_attach_match(uint32_t key1, uint32_t key2,
       int r = list[i].attachfn(pcif);
       if (r > 0)
       {
-        //cprintf("attchfn failed!\n");
         return r;
       }
       if (r < 0)
@@ -78,7 +77,6 @@ static int pci_attach_match(uint32_t key1, uint32_t key2,
                 "%x.%x (%p): e\n",
                 key1, key2, list[i].attachfn, r);
     }
-    //cprintf("No match for key1 and key2\n");
   }
   return 0;
 }
@@ -192,9 +190,9 @@ void
 pci_func_enable(struct pci_func *f)
 {
   pci_conf_write(f, PCI_COMMAND_STATUS_REG,
-                 PCI_COMMAND_IO_ENABLE |
-                 PCI_COMMAND_MEM_ENABLE |
-                 PCI_COMMAND_MASTER_ENABLE);
+                    PCI_COMMAND_IO_ENABLE  |
+                    PCI_COMMAND_MEM_ENABLE |
+                    PCI_COMMAND_MASTER_ENABLE);
 
   uint32_t bar_width;
   uint32_t bar;
