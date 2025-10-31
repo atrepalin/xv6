@@ -6,7 +6,7 @@
 #include "x86.h"
 
 // Flag to do "lspci" at bootup
-static int pci_show_devs = 1;
+static int pci_show_devs  = 1;
 static int pci_show_addrs = 1;
 
 // PCI "configuration mechanism one"
@@ -31,7 +31,7 @@ struct pci_driver pci_attach_class[] = {
 // pci_attach_vendor matches the vendor ID and device ID of a PCI device
 struct pci_driver pci_attach_vendor[] = {
   // [E1000 5.2] QEMU emulates an 82540EM, specifically.
-  { 0x8086, 0x100e, &e1000_attach},
+  { 0x8086, 0x100e, &e1000_attach },
   { 0,      0,      0             },
 };
 
@@ -185,7 +185,6 @@ pci_bridge_attach(struct pci_func *pcif)
 }
 
 // External PCI subsystem interface
-
 void
 pci_func_enable(struct pci_func *f)
 {

@@ -61,9 +61,9 @@ static uint16_t checksum(void *vdata, size_t length) {
     uint8_t *data = vdata;
     uint64_t acc = 0;
     for (size_t i = 0; i + 1 < length; i += 2)
-        acc += (data[i] << 8) + data[i+1];
+        acc += (data[i] << 8) + data[i + 1];
     if (length & 1)
-        acc += data[length-1] << 8;
+        acc += data[length - 1] << 8;
     while (acc >> 16)
         acc = (acc & 0xffff) + (acc >> 16);
     return ~acc;
@@ -103,6 +103,7 @@ void net_poll(void) {
     switch (ntohs(eth->type)) {
         case 0x0800:
             struct ip_hdr *ip = (struct ip_hdr*)(buf + sizeof(*eth));
+            
             if (ip->proto != 1) 
                 return;
 
@@ -148,7 +149,7 @@ void net_poll(void) {
 
                 transmit(reply_buf, offset + payload_len);
             }
-        break;
+            break;
 
         case 0x0806:
             struct arp_hdr *arp = (struct arp_hdr*)(buf + sizeof(*eth));
@@ -191,10 +192,10 @@ void net_poll(void) {
 
                 transmit(reply_buf, offset);
             }
-        break;
+            break;
 
         default:
-            break;
+            return;
     }
 }
 
