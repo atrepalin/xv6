@@ -17,7 +17,7 @@ static inline void sys_arch_unprotect(sys_prot_t pval) {
 
 static inline u32_t sys_now(void) {
     extern uint ticks;
-    return ticks;
+    return ticks * 10;
 }
 
 static inline void sys_init(void) { }

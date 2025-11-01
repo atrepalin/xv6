@@ -1,4 +1,23 @@
-int curl(int, int, int, int, int, const char*, const char*, char[2048]);
+struct request {
+  union {
+    const char* url;
+
+    struct {
+      uint8_t a;
+      uint8_t b;
+      uint8_t c;
+      uint8_t d;
+
+      uint16_t port;
+    } ip;
+  };
+};
+
+#define URL 0
+#define IP  1
+
+int curl(int, struct request*, const char*, const char*, char[2048],
+  const char*, size_t, const char*);
 
 #define ERR_OK          0    /* No error, everything OK. */
 #define ERR_MEM        -1    /* Out of memory error. */
@@ -17,8 +36,7 @@ int curl(int, int, int, int, int, const char*, const char*, char[2048]);
 #define ERR_RST        -14   /* Connection reset. */
 #define ERR_CLSD       -15   /* Connection closed. */
 #define ERR_ARG        -16   /* Illegal argument. */
-#define ERR_LINKDOWN   -17   /* Link is down. */
-#define ERR_UNKNOWN    -18   /* Unknown error. */
+#define ERR_UNKNOWN    -17   /* Unknown error. */
 
 static const char *errors[] = {
   [0]               = "Success",
@@ -38,7 +56,6 @@ static const char *errors[] = {
   [-ERR_RST]        = "Connection reset",
   [-ERR_CLSD]       = "Connection closed",
   [-ERR_ARG]        = "Illegal argument",
-  [-ERR_LINKDOWN]   = "Link is down",
   [-ERR_UNKNOWN]    = "Unknown error",
 };
 

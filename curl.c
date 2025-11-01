@@ -1,207 +1,206 @@
-#include "lwip/tcp.h"
-#include "lwip/ip_addr.h"
-#include "lwip/err.h"
-#include "lwip/pbuf.h"
-#include "lwip/timeouts.h"
+#include "types.h"
+#include "user.h"
+#include "curl.h"
+#include "http_parser.h"
 
-#include "defs.h"
-#include "defs.h"
-#include "spinlock.h"
-#include "param.h"
-#include "mmu.h"
-#include "fs.h"
-#include "proc.h"
+#define printf(...) printf(1, __VA_ARGS__)
+#define HEADERS 8
 
-static int chan;
-
-extern struct {
-  struct spinlock lock;
-} ptable;
-
-void wait_for_msg(struct proc *p) {
-    acquire(&ptable.lock);
-
-    p->chan = &chan;
-    p->state = SLEEPING;
-
-    int intena = mycpu()->intena;
-    swtch(&p->context, mycpu()->scheduler);
-    mycpu()->intena = intena;
-
-    p->chan = 0;
-
-    release(&ptable.lock);
+static void strncpy(char *dst, const char *src, int n) {
+    int i = 0;
+    for (; i < n - 1 && src[i]; i++)
+        dst[i] = src[i];
+    dst[i] = 0;
 }
 
-void wakeup_on_msg(struct proc *p) {
-    acquire(&ptable.lock);
-
-    if (p->state == SLEEPING && p->chan == &chan) {
-        p->state = RUNNABLE;
-        p->chan = 0;
-    }
-
-    release(&ptable.lock);
-}
-
-#define HTTP_BUF_SIZE 2048
-
-struct http_ctx {
-    char buffer[HTTP_BUF_SIZE];
-    int len;
-    int error;
-    struct proc *proc;
+struct header {
+    char name[64];
+    char value[128];
 };
 
-static err_t recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
-    struct http_ctx *ctx = (struct http_ctx*)arg;
+struct curl_opts {
+    char url[256];
+    char method[16];
+    char path[128];
+    char host[64];
+    int port;
+    char *body;
+    char *content_type;
+    struct header headers[HEADERS];
+    int header_count;
+};
 
-    if (!p) {
-        tcp_close(tpcb); 
-        wakeup_on_msg(ctx->proc);
-        return ERR_OK;
+static void usage(void);
+static void parse_url(const char *url, struct curl_opts *opts);
+static void parse_args(int argc, char *argv[], struct curl_opts *opts);
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        usage();
+        exit();
     }
 
-    int to_copy = p->len;
+    struct curl_opts opts;
+    memset(&opts, 0, sizeof(opts));
+    strcpy(opts.method, "GET");
 
-    if (ctx->len + to_copy > sizeof(ctx->buffer) - 1) 
-        to_copy = sizeof(ctx->buffer) - 1 - ctx->len;
+    parse_args(argc, argv, &opts);
+    parse_url(opts.url, &opts);
 
-    memmove(ctx->buffer + ctx->len, p->payload, to_copy); 
-    ctx->len += to_copy; 
-    ctx->buffer[ctx->len] = '\0';
+    printf("=== CURL DEBUG ===\n");
+    printf("URL: %s\n", opts.url);
+    printf("Method: %s\n", opts.method);
+    printf("Host: %s\n", opts.host);
+    printf("Port: %d\n", opts.port);
+    printf("Path: %s\n", opts.path);
+    if (opts.body)
+        printf("Body: %s\n", opts.body);
+    if (opts.content_type)
+        printf("Content-Type: %s\n", opts.content_type);
+    printf("==================\n\n");
 
-    pbuf_free(p); 
-    return ERR_OK;
-}
+    struct request req;
+    memset(&req, 0, sizeof(req));
 
-static err_t connected_cb(void *arg, struct tcp_pcb *tpcb, err_t err) {
-    struct http_ctx *ctx = (struct http_ctx*)arg;
+    int curl_type = IP;
 
-    if (err != ERR_OK) {
-        ctx->error = err;
-        wakeup_on_msg(ctx->proc);
-        return err;
-    }
-
-    tcp_recv(tpcb, recv_cb);
-
-    tcp_write(tpcb, ctx->buffer, strlen(ctx->buffer), TCP_WRITE_FLAG_COPY);
-    tcp_output(tpcb);
-
-    return ERR_OK;
-}
-
-static void error_cb(void *arg, err_t err) {
-    struct http_ctx *ctx = (struct http_ctx*)arg;
-
-    if (err != ERR_OK) {
-        ctx->error = err;
-        wakeup_on_msg(ctx->proc);
-        return;
-    }
-}
-
-int snprintf(char *buf, int size, const char *fmt, ...) {
-    char *p = buf;
-    char *end = buf + size - 1;
-    const char *f = fmt;
-
-    uint *argp = (uint*)(void*)(&fmt + 1);
-
-    while (*f && p < end) {
-        if (*f == '%') {
-            f++;
-            if (*f == 's') {
-                char *s = (char*)*argp++;
-                if (!s) s = "(null)";
-                while (*s && p < end) *p++ = *s++;
-            } else if (*f == 'd') {
-                int val = (int)*argp++;
-                char tmp[16];
-                int i = 0;
-
-                int neg = 0;
-                if (val < 0) { neg = 1; val = -val; }
-
-                if (val == 0) tmp[i++] = '0';
-                else {
-                    while (val > 0) {
-                        tmp[i++] = '0' + (val % 10);
-                        val /= 10;
-                    }
-                }
-                if (neg) tmp[i++] = '-';
-
-                for (int j = i - 1; j >= 0 && p < end; j--) *p++ = tmp[j];
-            } else {
-                if (p < end) *p++ = '%';
-                if (p < end) *p++ = *f;
+    if (!strncmp(opts.url, "http://", 7) || !strncmp(opts.url, "https://", 8)) {
+        curl_type = URL;
+        req.url = opts.url;
+    } else {
+        int is_ip = 1;
+        for (int i = 0; opts.host[i]; i++) {
+            char c = opts.host[i];
+            if (!((c >= '0' && c <= '9') || c == '.')) {
+                is_ip = 0;
+                break;
             }
-            f++;
+        }
+
+        if (is_ip) {
+            curl_type = IP;
+            char *s = (char*)opts.host;
+            int a = atoi(s);
+            s = strchr(s, '.'); if (!s) goto bad_ip; s++;
+            int b = atoi(s);
+            s = strchr(s, '.'); if (!s) goto bad_ip; s++;
+            int c = atoi(s);
+            s = strchr(s, '.'); if (!s) goto bad_ip; s++;
+            int d = atoi(s);
+
+            req.ip.a = a;
+            req.ip.b = b;
+            req.ip.c = c;
+            req.ip.d = d;
+            req.ip.port = opts.port;
         } else {
-            *p++ = *f++;
+            curl_type = URL;
+            req.url = opts.url;
         }
     }
 
-    *p = '\0';
-    return p - buf;
+    static char buf[4096];
+    int err = curl(curl_type, &req, opts.method, opts.path,
+                   buf,
+                   opts.body, opts.body ? strlen(opts.body) : 0,
+                   opts.content_type);
+
+    if (err < 0) {
+        printf("curl failed (code %d: %s)\n", err, curl_strerror(err));
+        exit();
+    }
+
+    struct http_response *res = parse_http_response(buf);
+    printf("HTTP %d %s\n", res->status_code, res->status_text);
+    for (int i = 0; i < res->header_count; i++)
+        printf("%s: %s\n", res->headers[i].name, res->headers[i].value);
+
+    printf("\n%s\n", res->body);
+    exit();
+
+bad_ip:
+    printf("Invalid IP format: %s\n", opts.host);
+    exit();
 }
 
-void capitalize(char* method) {
-    for (int i = 0; method[i] && i < strlen(method); i++) {
-        char ch = method[i];
-        if (ch >= 'a' && ch <= 'z')
-            ch -= 32;
-        method[i] = ch;
+static void usage(void) {
+    printf("Usage: curl <url> [-X METHOD] [-d DATA] [-H HEADER]\n");
+    printf("Example:\n");
+    printf("  curl http://10.0.2.1:8080/test\n");
+    printf("  curl example.com\n");
+    printf("  curl http://10.0.2.1:8080/greet/world -X POST\n");
+    printf("  curl 10.0.2.1:8080/json -X POST -d {\"name\":\"world\"} -H \"Content-Type:application/json\"\n");
+}
+
+static void parse_args(int argc, char *argv[], struct curl_opts *opts) {
+    strcpy(opts->url, argv[1]);
+
+    for (int i = 2; i < argc; i++) {
+        if (!strcmp(argv[i], "-X") && i + 1 < argc) {
+            strcpy(opts->method, argv[++i]);
+        }
+        else if (!strcmp(argv[i], "-d") && i + 1 < argc) {
+            opts->body = argv[++i];
+            if (!strcmp(opts->method, "GET"))
+                strcpy(opts->method, "POST");
+        }
+        else if (!strcmp(argv[i], "-H") && i + 1 < argc) {
+            if (opts->header_count < HEADERS) {
+                char *h = argv[++i];
+                char *colon = strchr(h, ':');
+                if (colon) {
+                    *colon = 0;
+                    strcpy(opts->headers[opts->header_count].name, h);
+                    strcpy(opts->headers[opts->header_count].value, colon + 1);
+                    // Trim пробелы
+                    char *v = opts->headers[opts->header_count].value;
+                    while (*v == ' ') v++;
+                    if (!strcmp(opts->headers[opts->header_count].name, "Content-Type"))
+                        opts->content_type = v;
+                    opts->header_count++;
+                }
+            }
+        }
+        else {
+            printf("Unknown argument: %s\n", argv[i]);
+            usage();
+            exit();
+        }
     }
 }
 
-int sys_curl() {
-    int a, b, c, d;
-    int port;
-    char *method;
-    char *path;
-    char *output;
+static void parse_url(const char *url, struct curl_opts *opts) {
+    const char *p = url;
+    const char *host_start = p;
 
-    if (argint(0, &a) < 0) return -1;
-    if (argint(1, &b) < 0) return -1;
-    if (argint(2, &c) < 0) return -1;
-    if (argint(3, &d) < 0) return -1;
-    if (argint(4, &port) < 0) return -1;
-    if (argstr(5, &method) < 0) return -1;
-    if (argstr(6, &path) < 0) return -1;
-    if (argptr(7, &output, HTTP_BUF_SIZE) < 0) return -1;
+    if (strncmp(p, "http://", 7) == 0) {
+        host_start = p + 7;
+    } else if (strncmp(p, "https://", 8) == 0) {
+        printf("Warning: HTTPS not supported, using HTTP instead.\n");
+        host_start = p + 8;
+    }
 
-    capitalize(method);
+    const char *path_start = strchr(host_start, '/');
+    if (path_start) {
+        int len = path_start - host_start;
+        strncpy(opts->host, host_start, len + 1);
+        strcpy(opts->path, path_start);
+    } else {
+        strcpy(opts->host, host_start);
+        strcpy(opts->path, "/");
+    }
 
-    struct tcp_pcb *pcb = tcp_new();
-    ip4_addr_t server;
-    IP4_ADDR(&server, a, b, c, d);
+    char *colon = strchr(opts->host, ':');
+    if (colon) {
+        *colon = 0;
+        opts->port = atoi(colon + 1);
+        if (opts->port <= 0) opts->port = 80;
+    } else {
+        opts->port = 80;
+    }
 
-    struct http_ctx *ctx = (struct http_ctx*)kalloc();
-    if (!ctx) return -1;
+    if (opts->path[0] == 0)
+        strcpy(opts->path, "/");
 
-    struct proc *p = myproc();
-
-    ctx->len = 0;
-    ctx->proc = p;
-    ctx->error = ERR_OK;
-    snprintf(ctx->buffer, sizeof(ctx->buffer), 
-        "%s %s HTTP/1.1\r\nHost: %d.%d.%d.%d\r\n\r\n", method, path, a, b, c, d);
-
-    tcp_arg(pcb, (void*)ctx);
-    tcp_err(pcb, error_cb);
-    tcp_connect(pcb, &server, port, connected_cb);
-
-    wait_for_msg(p);
-
-    if (copyout(p->pgdir, (uint)output, ctx->buffer, HTTP_BUF_SIZE) < 0)
-        return -1;
-
-    int error = ctx->error;
-
-    kfree((char *)ctx);
-
-    return error;
+    strcpy(opts->url, url);
 }

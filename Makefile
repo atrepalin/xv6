@@ -31,7 +31,7 @@ OBJS = \
 	pci.o\
 	e1000.o\
 	net.o\
-	curl.o\
+	kcurl.o\
 
 # Cross-compiling (e.g., on Mac OS X)
 # TOOLPREFIX = i386-jos-elf
@@ -174,7 +174,7 @@ mkfs: mkfs.c fs.h
 
 UPROGS=\
 	_ping\
-	_http\
+	_curl\
 	_cat\
 	_echo\
 	_forktest\

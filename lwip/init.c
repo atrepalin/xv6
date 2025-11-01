@@ -1,5 +1,6 @@
 #include "lwip/init.h"
 #include "lwip/netif.h"
+#include "lwip/dns.h"
 #include "lwip/timeouts.h"
 #include "netif/etharp.h"
 #include "lwip/ip_addr.h"
@@ -64,22 +65,28 @@ static err_t netif_init_cb(struct netif *netif) {
 
 void lwip_stack_init(void) {
     lwip_init();
+    dns_init();
 
-    struct ip4_addr ipaddr, netmask, gw;
+    struct ip4_addr ipaddr, netmask, gw, dns;
     uint8_t ip[4];
     e1000_get_ip(ip);
 
     IP4_ADDR(&ipaddr, ip[0], ip[1], ip[2], ip[3]);
     IP4_ADDR(&netmask, 255, 255, 255, 0);
     IP4_ADDR(&gw, ip[0], ip[1], ip[2], 1);
+    IP4_ADDR(&dns, 8, 8, 8, 8);
 
     netif_add(&netif, &ipaddr, &netmask, &gw, NULL, netif_init_cb, ethernet_input);
     netif_set_default(&netif);
     netif_set_up(&netif);
 
-    cprintf("lwIP initialized: IP=%d.%d.%d.%d GW=%d.%d.%d.%d\n",
+    dns_setserver(0, &dns);
+
+    cprintf("lwIP initialized: IP=%d.%d.%d.%d GW=%d.%d.%d.%d DNS=%d.%d.%d.%d\n",
         ip[0], ip[1], ip[2], ip[3],
-        ip[0], ip[1], ip[2], 1);
+        ip[0], ip[1], ip[2], 1,
+        8, 8, 8, 8
+    );
 
     init_done = 1;
 }

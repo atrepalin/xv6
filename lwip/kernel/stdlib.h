@@ -26,5 +26,13 @@ static inline void free(void *ptr) {
     if (ptr)
         kmfree(ptr);
 }
+static unsigned int lwip_rand_seed = 123456789;
+
+static inline uint32_t lwip_rand(void) {
+    lwip_rand_seed = lwip_rand_seed * 1103515245 + 12345;
+    return (lwip_rand_seed / 65536) % 32768;
+}
+
+#define LWIP_RAND() lwip_rand()
 
 #endif /* _XV6_STDLIB_H_ */
