@@ -6,6 +6,7 @@
 #include "proc.h"
 #include "x86.h"
 #include "syscall.h"
+#include "lwip.h"
 
 // User code makes a system call with INT T_SYSCALL.
 // System call number in %eax.
@@ -107,6 +108,8 @@ extern int sys_transmit(void);
 extern int sys_receive(void);
 extern int sys_get_mac(void);
 extern int sys_get_ip(void);
+extern int sys_curl(void);
+extern int sys_lwip_poll(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -131,10 +134,12 @@ static int (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 
-[SYS_transmit] sys_transmit,
-[SYS_receive]  sys_receive,
-[SYS_get_mac]  sys_get_mac,
-[SYS_get_ip]   sys_get_ip
+[SYS_transmit]  sys_transmit,
+[SYS_receive]   sys_receive,
+[SYS_get_mac]   sys_get_mac,
+[SYS_get_ip]    sys_get_ip,
+[SYS_lwip_poll] sys_lwip_poll,
+[SYS_curl]      sys_curl
 };
 
 void

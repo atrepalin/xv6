@@ -1,0 +1,34 @@
+LWIPDIR := lwip
+LWIPINC := -I$(LWIPDIR)/include -I$(LWIPDIR) -I. -I$(LWIPDIR)/kernel
+
+LWIP_SRC := \
+    $(LWIPDIR)/core/init.c \
+    $(LWIPDIR)/core/def.c \
+    $(LWIPDIR)/core/dns.c \
+    $(LWIPDIR)/core/inet_chksum.c \
+    $(LWIPDIR)/core/ip.c \
+    $(LWIPDIR)/core/mem.c \
+    $(LWIPDIR)/core/memp.c \
+    $(LWIPDIR)/core/netif.c \
+    $(LWIPDIR)/core/pbuf.c \
+    $(LWIPDIR)/core/raw.c \
+    $(LWIPDIR)/core/stats.c \
+    $(LWIPDIR)/core/sys.c \
+    $(LWIPDIR)/core/tcp.c \
+    $(LWIPDIR)/core/tcp_in.c \
+    $(LWIPDIR)/core/tcp_out.c \
+    $(LWIPDIR)/core/timeouts.c \
+    $(LWIPDIR)/core/udp.c \
+    $(LWIPDIR)/core/ipv4/icmp.c \
+    $(LWIPDIR)/core/ipv4/ip4.c \
+    $(LWIPDIR)/core/ipv4/ip4_addr.c \
+    $(LWIPDIR)/core/ipv4/ip4_frag.c \
+    $(LWIPDIR)/core/ipv4/etharp.c \
+    $(LWIPDIR)/netif/ethernet.c \
+    $(LWIPDIR)/init.c
+
+OBJS += $(LWIP_SRC:.c=.o)
+
+CFLAGS += $(LWIPINC)
+CFLAGS += -nostdinc
+CFLAGS += -DLWIP_NOASSERT -DNO_SYS=1 -DLWIP_TIMEVAL_PRIVATE=0

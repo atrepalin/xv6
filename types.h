@@ -1,3 +1,6 @@
+#ifndef _TYPES_H_
+#define _TYPES_H_
+
 typedef unsigned int   uint;
 typedef unsigned short ushort;
 typedef unsigned char  uchar;
@@ -31,3 +34,5 @@ typedef int32_t ssize_t;
 
 // off_t is used for file offsets and lengths.
 typedef int32_t off_t;
+
+#endif

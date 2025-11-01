@@ -78,7 +78,7 @@ e1000_attach(struct pci_func *pcif)
 }
 
 void
-e1000_transmit(const char *buf, size_t length) {
+e1000_transmit(void *buf, size_t length) {
 	uint32_t tail = e1000[E1000_TDT];
 
 	struct e1000_tx_desc *desc = &tx_desc_buf[tail];
@@ -96,8 +96,8 @@ e1000_transmit(const char *buf, size_t length) {
 	e1000[E1000_TDT] = (tail + 1) % TXRING_LEN;
 }
 
-int
-e1000_receive(char *buf, size_t length) {
+size_t
+e1000_receive(uint8_t *buf, size_t length) {
     uint32_t next = (e1000[E1000_RDT] + 1) % RXRING_LEN;
 
     struct e1000_rx_desc *desc = &rx_desc_buf[next];

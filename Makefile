@@ -1,4 +1,5 @@
 OBJS = \
+	alloc.o\
 	bio.o\
 	console.o\
 	exec.o\
@@ -30,6 +31,7 @@ OBJS = \
 	pci.o\
 	e1000.o\
 	net.o\
+	curl.o\
 
 # Cross-compiling (e.g., on Mac OS X)
 # TOOLPREFIX = i386-jos-elf
@@ -84,6 +86,8 @@ CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 &
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
 # FreeBSD ld wants ``elf_i386_fbsd''
 LDFLAGS += -m $(shell $(LD) -V | grep elf_i386 2>/dev/null | head -n 1)
+
+include lwip/Makefrag
 
 # Disable PIE when possible (for Ubuntu 16.10 toolchain)
 ifneq ($(shell $(CC) -dumpspecs 2>/dev/null | grep -e '[^f]no-pie'),)
@@ -146,7 +150,7 @@ tags: $(OBJS) entryother.S _init
 vectors.S: vectors.pl
 	./vectors.pl > vectors.S
 
-ULIB = ulib.o usys.o printf.o umalloc.o
+ULIB = ulib.o usys.o printf.o umalloc.o http_parser.o
 
 _%: %.o $(ULIB)
 	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
@@ -170,6 +174,7 @@ mkfs: mkfs.c fs.h
 
 UPROGS=\
 	_ping\
+	_http\
 	_cat\
 	_echo\
 	_forktest\
@@ -193,10 +198,12 @@ fs.img: mkfs README $(UPROGS)
 
 clean: 
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
-	*.o *.d *.asm *.sym vectors.S bootblock entryother \
+	*.asm *.sym vectors.S bootblock entryother \
 	initcode initcode.out kernel xv6.img fs.img kernelmemfs \
 	xv6memfs.img mkfs .gdbinit \
 	$(UPROGS)
+	find . -name "*.o" -type f -delete 
+	find . -name "*.d" -type f -delete
 
 # make a printout
 FILES = $(shell grep -v '^\#' runoff.list)
@@ -241,10 +248,17 @@ net:
 	sudo ip addr add 10.0.2.1/24 dev tap0
 	sudo ip link set tap0 up
 	sudo ip link set tap0 promisc on
+	sudo sysctl -w net.ipv4.ip_forward=1
+	sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+	sudo iptables -A FORWARD -i tap0 -j ACCEPT
+	sudo iptables -A FORWARD -o tap0 -m state --state ESTABLISHED,RELATED -j ACCEPT
 	sudo tcpdump -i tap0 -n -e -xx
 
 ping:
 	sudo ./ping.py
+
+server:
+	./server.py
 
 qemu-memfs: xv6memfs.img
 	$(QEMU) -drive file=xv6memfs.img,index=0,media=disk,format=raw -smp $(CPUS) -m 256
@@ -272,7 +286,7 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
-	printf.c umalloc.c\
+	printf.c umalloc.c http_parser.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 

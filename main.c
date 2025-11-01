@@ -5,6 +5,7 @@
 #include "mmu.h"
 #include "proc.h"
 #include "x86.h"
+#include "lwip.h"
 
 static void startothers(void);
 static void mpmain(void)  __attribute__((noreturn));
@@ -19,6 +20,7 @@ main(void)
 {
   kinit1(end, P2V(4*1024*1024)); // phys page allocator
   kvmalloc();      // kernel page table
+  kminit();
   mpinit();        // detect other processors
   lapicinit();     // interrupt controller
   seginit();       // segment descriptors
@@ -32,6 +34,7 @@ main(void)
   fileinit();      // file table
   ideinit();       // disk 
   pci_init();      // pci
+  lwip_stack_init();
   startothers();   // start other processors
   kinit2(P2V(4*1024*1024), P2V(PHYSTOP)); // must come after startothers()
   userinit();      // first user process

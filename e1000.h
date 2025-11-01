@@ -186,8 +186,8 @@ struct e1000_data {
 #define VALUEATMASK(value, mask) value * ((mask) & ~((mask) << 1))
 
 int e1000_attach(struct pci_func *pcif);
-void e1000_transmit(const char *buf, size_t length);
-int e1000_receive(char *buf, size_t length);
+void e1000_transmit(void *buf, size_t length);
+size_t e1000_receive(uint8_t *buf, size_t length);
 void e1000_get_mac(uint8_t *mac);
 void e1000_get_ip(uint8_t *ip);
 #endif

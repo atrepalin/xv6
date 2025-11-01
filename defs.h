@@ -63,6 +63,11 @@ void            ioapicenable(int irq, int cpu);
 extern uchar    ioapicid;
 void            ioapicinit(void);
 
+// alloc.c
+void*           kmalloc(int size);
+void            kmfree(void *ptr);
+void            kminit(void);
+
 // kalloc.c
 char*           kalloc(void);
 void            kfree(char*);

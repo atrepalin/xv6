@@ -7,6 +7,8 @@
 
 char *argv[] = { "sh", 0 };
 
+extern void lwip_poll(void);
+
 int
 main(void)
 {
@@ -31,6 +33,11 @@ main(void)
       printf(1, "init: exec sh failed\n");
       exit();
     }
+
+    if (fork() == 0) {
+      for(;;) lwip_poll();
+    }
+
     while((wpid=wait()) >= 0 && wpid != pid)
       printf(1, "zombie!\n");
   }

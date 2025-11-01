@@ -21,7 +21,7 @@ int sys_receive(void) {
   if (argint(1, &length) < 0) return -1;
   if (argptr(0, &buf, length) < 0) return -1;
 
-  return e1000_receive(buf, length);
+  return e1000_receive((uint8_t *)buf, length);
 }
 
 int sys_get_mac(void) {
