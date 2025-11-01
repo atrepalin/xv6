@@ -175,6 +175,7 @@ mkfs: mkfs.c fs.h
 UPROGS=\
 	_ping\
 	_curl\
+	_api\
 	_cat\
 	_echo\
 	_forktest\

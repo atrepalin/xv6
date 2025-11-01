@@ -152,7 +152,6 @@ static void parse_args(int argc, char *argv[], struct curl_opts *opts) {
                     *colon = 0;
                     strcpy(opts->headers[opts->header_count].name, h);
                     strcpy(opts->headers[opts->header_count].value, colon + 1);
-                    // Trim пробелы
                     char *v = opts->headers[opts->header_count].value;
                     while (*v == ' ') v++;
                     if (!strcmp(opts->headers[opts->header_count].name, "Content-Type"))

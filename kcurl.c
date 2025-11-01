@@ -258,7 +258,9 @@ int sys_curl() {
 
     switch (type) {
         case URL:
-            dns_gethostbyname(req->url, &ipaddr, dns_cb, ctx);
+            if (dns_gethostbyname(req->url, &ipaddr, dns_cb, ctx) == ERR_OK) {
+                dns_cb(req->url, &ipaddr, ctx);
+            }
             break;
         case IP:
             IP4_ADDR(&ipaddr, req->ip.a, req->ip.b, req->ip.c, req->ip.d);
