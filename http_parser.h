@@ -14,4 +14,14 @@ struct http_response {
     const char *body;
 };
 
+struct http_request {
+    char method[16];
+    char uri[256];
+    char version[16];
+    int header_count;
+    struct http_header headers[MAX_HEADERS];
+    const char *body;
+};
+
 struct http_response* parse_http_response(const char *response);
+struct http_request* parse_http_request(const char *request);

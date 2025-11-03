@@ -39,6 +39,10 @@ static const char *find_line_end(const char *s) {
     return 0;
 }
 
+static char isspace(char c) {
+    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
+}
+
 struct http_response* parse_http_response(const char *response) {
     static struct http_response res;
     res.header_count = 0;
@@ -110,4 +114,81 @@ struct http_response* parse_http_response(const char *response) {
     res.body = pos;
 
     return &res;
+}
+
+struct http_request* parse_http_request(const char *data) {
+    static struct http_request req;
+    req.method[0] = 0;
+    req.uri[0] = 0;
+    req.version[0] = 0;
+    req.header_count = 0;
+    req.body = 0;
+
+    if (!data) return &req;
+
+    const char *pos = data;
+    char line[MAX_LINE];
+    const char *line_end = find_line_end(pos);
+    if (!line_end)
+        return &req;
+
+    int len = line_end - pos;
+    if (len >= MAX_LINE) len = MAX_LINE - 1;
+    for (int i = 0; i < len; i++) line[i] = pos[i];
+    line[len] = 0;
+
+    const char *p = line;
+    int i = 0;
+
+    while (*p && !isspace(*p) && i < (int)sizeof(req.method) - 1)
+        req.method[i++] = *p++;
+    req.method[i] = 0;
+    while (isspace(*p)) p++;
+
+    i = 0;
+    while (*p && !isspace(*p) && i < (int)sizeof(req.uri) - 1)
+        req.uri[i++] = *p++;
+    req.uri[i] = 0;
+    while (isspace(*p)) p++;
+
+    strncpy(req.version, p, sizeof(req.version));
+    req.version[sizeof(req.version) - 1] = 0;
+    strtrim(req.version);
+
+    pos = line_end + 1;
+
+    while (1) {
+        if ((pos[0] == '\r' && pos[1] == '\n')) { pos += 2; break; }
+        if (pos[0] == '\n') { pos++; break; }
+        if (!pos[0]) break;
+
+        line_end = find_line_end(pos);
+        if (!line_end) break;
+        len = line_end - pos;
+        if (len >= MAX_LINE) len = MAX_LINE - 1;
+        for (i = 0; i < len; i++) line[i] = pos[i];
+        line[len] = 0;
+
+        int sep = 0;
+        while (line[sep] && line[sep] != ':') sep++;
+        if (line[sep] == ':' && req.header_count < MAX_HEADERS) {
+            line[sep] = 0;
+            char *name = line;
+            char *value = line + sep + 1;
+
+            strtrim(name);
+            strtrim(value);
+
+            strncpy(req.headers[req.header_count].name, name, sizeof(req.headers[req.header_count].name));
+            strncpy(req.headers[req.header_count].value, value, sizeof(req.headers[req.header_count].value));
+
+            req.header_count++;
+        }
+
+        pos = line_end + 1;
+    }
+
+    req.body = pos;
+
+    return &req;
 }

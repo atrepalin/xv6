@@ -98,7 +98,7 @@ void lwip_poll(void) {
 
     uint8_t *buf = (uint8_t*)kalloc();
 
-    int len = e1000_receive(buf, 4096);
+    int len = e1000_receive(buf, PGSIZE);
     if (len > 0) {
         struct pbuf *p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
         if (p != NULL) {

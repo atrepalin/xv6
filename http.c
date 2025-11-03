@@ -25,3 +25,18 @@ static const char *errors[] = {
 const char* strerror(int errnum) {
   return errors[-errnum];
 }
+
+int httpd_poll(httpd_handler handler) {
+  static struct incoming_http_request req;
+  static struct outgoing_http_response resp;
+
+  int ret;
+  
+  if ((ret = httpd_recv(&req)) != ERR_OK) return ret;
+
+  handler(&req, &resp);
+
+  if ((ret = httpd_send(req.pcb, resp.total_len, resp.response)) != ERR_OK) return ret;
+
+  return ERR_OK;
+}

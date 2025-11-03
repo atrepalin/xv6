@@ -27,3 +27,6 @@
 #define SYS_get_ip      25
 #define SYS_lwip_poll   26
 #define SYS_curl        27
+#define SYS_httpd_init  28
+#define SYS_httpd_send  29
+#define SYS_httpd_recv  30

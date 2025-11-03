@@ -1,3 +1,7 @@
+#ifndef HTTP_H
+#define HTTP_H
+
+#define HTTP_MAX_TIMEOUT 5000
 #define HTTP_BUF_SIZE 2048
 
 struct request {
@@ -15,11 +19,33 @@ struct request {
   };
 };
 
+struct incoming_http_request {
+  uint32_t pcb;
+  size_t total_len;
+  size_t expected_len;
+  size_t received_body_len;
+  char headers_done;
+  char used;
+  char request[HTTP_BUF_SIZE];
+};
+
+struct outgoing_http_response {
+  size_t total_len;
+  char response[HTTP_BUF_SIZE];
+};
+
+typedef void (*httpd_handler)(struct incoming_http_request*, struct outgoing_http_response*); 
+
 #define URL 0
 #define IP  1
 
-int curl(int, struct request*, const char*, const char*, char[2048],
+int curl(int, struct request*, const char*, const char*, char[HTTP_BUF_SIZE],
   const char*, size_t, const char*);
+
+int httpd_init(uint16_t);
+int httpd_send(uint32_t, size_t, const char*);
+int httpd_recv(struct incoming_http_request*);
+int httpd_poll(httpd_handler);
 
 #define ERR_OK          0    /* No error, everything OK. */
 #define ERR_MEM        -1    /* Out of memory error. */
@@ -41,3 +67,5 @@ int curl(int, struct request*, const char*, const char*, char[2048],
 #define ERR_UNKNOWN    -17   /* Unknown error. */
 
 const char* strerror(int errnum);
+
+#endif
