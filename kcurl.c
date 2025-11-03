@@ -18,7 +18,56 @@ struct http_ctx {
     int len;
     int error;
     struct proc *proc;
+    struct tcp_pcb *tpcb;
 };
+
+extern uint ticks;
+
+struct http_timeout {
+    struct tcp_pcb *tpcb;
+    uint32_t start;
+    struct http_timeout *next;
+};
+
+static struct http_timeout *timeout_list;
+
+void http_timeout_add(struct tcp_pcb *pcb) {
+    struct http_timeout *t = kmalloc(sizeof(*t));
+    if (!t) return;
+
+    t->tpcb = pcb;
+    t->start = ticks;
+    t->next = timeout_list;
+    timeout_list = t;
+}
+
+void http_timeout_remove(struct tcp_pcb *pcb) {
+    struct http_timeout **p = &timeout_list;
+    while (*p) {
+        if ((*p)->tpcb == pcb) {
+            struct http_timeout *to_free = *p;
+            *p = (*p)->next;
+            kmfree(to_free);
+            return;
+        }
+        p = &(*p)->next;
+    }
+}
+
+void http_check_timeouts() {
+    struct http_timeout **p = &timeout_list;
+    while (*p) {
+        struct http_timeout *t = *p;
+        if (ticks - t->start >= HTTP_MAX_TIMEOUT / 10) {
+            if (t->tpcb) tcp_abort(t->tpcb);
+
+            *p = t->next;
+            kmfree(t);
+        } else {
+            p = &(*p)->next;
+        }
+    }
+}
 
 static err_t recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
     struct http_ctx *ctx = (struct http_ctx*)arg;
@@ -86,6 +135,9 @@ static void send(struct http_ctx *ctx, const ip_addr_t *ipaddr, const u16_t port
     tcp_arg(pcb, (void*)ctx);
     tcp_err(pcb, error_cb);
     tcp_connect(pcb, ipaddr, port, connected_cb);
+
+    ctx->tpcb = pcb;
+    http_timeout_add(pcb);
 }
 
 static void dns_cb(const char *name, const ip_addr_t *ipaddr, void *arg) {
@@ -188,6 +240,8 @@ int sys_curl() {
     }
 
     wait_for_msg(p);
+
+    http_timeout_remove(ctx->tpcb);
 
     if (copyout(p->pgdir, (uint)output, ctx->buffer, HTTP_BUF_SIZE) < 0)
         return ERR_UNKNOWN;

@@ -91,6 +91,8 @@ void lwip_stack_init(void) {
     init_done = 1;
 }
 
+extern void http_check_timeouts(void);
+
 void lwip_poll(void) {
     if (!init_done) return;
 
@@ -109,6 +111,7 @@ void lwip_poll(void) {
     kfree((char *)buf);
 
     sys_check_timeouts();
+    http_check_timeouts();
 }
 
 int
