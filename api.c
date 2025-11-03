@@ -1,15 +1,13 @@
 #include "types.h"
 #include "user.h"
-#include "curl.h"
+#include "http.h"
 #include "http_parser.h"
 
 #define printf(...) printf(1, __VA_ARGS__)
 
-#define MAX_OUTPUT 2048
-
 int main() {
     struct request req;
-    static char output[MAX_OUTPUT];
+    static char output[HTTP_BUF_SIZE];
 
     req.url = "jsonplaceholder.typicode.com";
 
@@ -29,7 +27,7 @@ int main() {
     );
 
     if (ret != 0) {
-        printf("curl failed with code %d (%s)\n", ret, curl_strerror(ret));
+        printf("curl failed with code %d (%s)\n", ret, strerror(ret));
         return 1;
     }
 

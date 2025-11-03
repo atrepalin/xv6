@@ -1,3 +1,5 @@
+#define HTTP_BUF_SIZE 2048
+
 struct request {
   union {
     const char* url;
@@ -38,27 +40,4 @@ int curl(int, struct request*, const char*, const char*, char[2048],
 #define ERR_ARG        -16   /* Illegal argument. */
 #define ERR_UNKNOWN    -17   /* Unknown error. */
 
-static const char *errors[] = {
-  [0]               = "Success",
-  [-ERR_MEM]        = "Out of memory error",
-  [-ERR_BUF]        = "Buffer error",
-  [-ERR_TIMEOUT]    = "Timeout",
-  [-ERR_RTE]        = "Routing problem",
-  [-ERR_INPROGRESS] = "Operation in progress",
-  [-ERR_VAL]        = "Illegal value",
-  [-ERR_WOULDBLOCK] = "Operation would block",
-  [-ERR_USE]        = "Address in use",
-  [-ERR_ALREADY]    = "Already connecting",
-  [-ERR_ISCONN]     = "Connection already established",
-  [-ERR_CONN]       = "Not connected",
-  [-ERR_IF]         = "Low-level network interface error",
-  [-ERR_ABRT]       = "Connection aborted",
-  [-ERR_RST]        = "Connection reset",
-  [-ERR_CLSD]       = "Connection closed",
-  [-ERR_ARG]        = "Illegal argument",
-  [-ERR_UNKNOWN]    = "Unknown error",
-};
-
-const char* curl_strerror(int errnum) {
-  return errors[-errnum];
-}
+const char* strerror(int errnum);

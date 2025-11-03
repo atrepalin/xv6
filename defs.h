@@ -199,3 +199,10 @@ struct pci_func;
 // pci.c
 int             pci_init(void);
 void            pci_func_enable(struct pci_func *f);
+
+// snprintf.c
+int             snprintf(char *buf, int size, const char *fmt, ...);
+
+// utils.c
+void wait_for_msg(struct proc *p);
+void wakeup_on_msg(struct proc *p);

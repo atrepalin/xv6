@@ -1,6 +1,6 @@
 #include "types.h"
 #include "user.h"
-#include "curl.h"
+#include "http.h"
 #include "http_parser.h"
 
 #define printf(...) printf(1, __VA_ARGS__)
@@ -99,14 +99,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    static char buf[4096];
+    static char buf[HTTP_BUF_SIZE];
     int err = curl(curl_type, &req, opts.method, opts.path,
                    buf,
                    opts.body, opts.body ? strlen(opts.body) : 0,
                    opts.content_type);
 
     if (err < 0) {
-        printf("curl failed (code %d: %s)\n", err, curl_strerror(err));
+        printf("curl failed (code %d: %s)\n", err, strerror(err));
         exit();
     }
 
