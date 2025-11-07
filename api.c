@@ -26,9 +26,10 @@ int main() {
         content_type      
     );
 
-    if (ret != 0) {
+    if (ret != ERR_OK) {
         printf("curl failed with code %d (%s)\n", ret, strerror(ret));
-        return 1;
+
+        exit();
     }
 
     struct http_response *resp = parse_http_response(output);

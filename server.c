@@ -60,9 +60,10 @@ int main(int argc, char *argv[]) {
 
     int ret = httpd_init(port);
 
-    if (ret != 0) {
+    if (ret != ERR_OK) {
         printf("httpd failed with code %d (%s)\n", ret, strerror(ret));
-        return 1;
+        
+        exit();
     } else {
         printf("httpd listening on %d.%d.%d.%d:%d\n", ip[0], ip[1], ip[2], ip[3], port);
     }

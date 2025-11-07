@@ -1,7 +1,7 @@
 #ifndef HTTP_H
 #define HTTP_H
 
-#define HTTP_MAX_TIMEOUT 5000
+#define HTTP_MAX_TIMEOUT 10000
 #define HTTP_BUF_SIZE 2048
 
 struct request {
