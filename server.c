@@ -6,7 +6,7 @@
 #define printf(...) printf(1, __VA_ARGS__)
 #define scanf(...) scanf(0, __VA_ARGS__)
 
-void handler(struct incoming_http_request *req, struct outgoing_http_response *resp) {
+void handler(struct incoming_http_request *req, struct outgoing_http_response *resp, void *arg) {
     struct http_request *request = parse_http_request(req->request);
 
     printf("Method: %s\n", request->method);
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
         printf("httpd listening on %d.%d.%d.%d:%d\n", ip[0], ip[1], ip[2], ip[3], port);
     }
 
-    while((ret = httpd_poll(handler)) == ERR_OK);
+    while ((ret = httpd_poll(handler, 0)) == ERR_OK);
 
     printf("httpd failed with code %d (%s)\n", ret, strerror(ret));
 

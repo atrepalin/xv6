@@ -34,7 +34,7 @@ struct outgoing_http_response {
   char response[HTTP_BUF_SIZE];
 };
 
-typedef void (*httpd_handler)(struct incoming_http_request*, struct outgoing_http_response*); 
+typedef void (*httpd_handler)(struct incoming_http_request*, struct outgoing_http_response*, void*); 
 
 #define URL 0
 #define IP  1
@@ -45,7 +45,14 @@ int curl(int, struct request*, const char*, const char*, char[HTTP_BUF_SIZE],
 int httpd_init(uint16_t);
 int httpd_send(uint32_t, size_t, const char*);
 int httpd_recv(struct incoming_http_request*);
-int httpd_poll(httpd_handler);
+int httpd_poll(httpd_handler, void*);
+
+#define stdin 0
+#define stdout 1
+#define stderr 2
+
+void cgi_handler(struct incoming_http_request*, struct outgoing_http_response*, void*);
+int read_buffer(int, char[HTTP_BUF_SIZE]);
 
 #define ERR_OK          0    /* No error, everything OK. */
 #define ERR_MEM        -1    /* Out of memory error. */

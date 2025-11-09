@@ -180,6 +180,8 @@ UPROGS=\
 	_curl\
 	_api\
 	_server\
+	_cgi\
+	_cgi_handler\
 	_cat\
 	_echo\
 	_forktest\
