@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 
     int fd = open(filename, O_RDONLY);
     if (fd < 0) {
-        const char err[64];
+        char err[64];
         snprintf(err, sizeof(err), "Failed to open %s\n", filename);
         printf(stdout,
             "HTTP/1.1 500 Internal Server Error\r\n"
@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
         exit();
     }
 
-    static char body[HTTP_BUF_SIZE - 128];
+    static char body[HTTP_BUF_SIZE - 192];
     int n = read(fd, body, sizeof(body) - 1);
     close(fd);
 
