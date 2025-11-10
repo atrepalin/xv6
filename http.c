@@ -82,12 +82,12 @@ void cgi_handler(struct incoming_http_request *req, struct outgoing_http_respons
 
   close(p2c[1]);
 
-  wait();
-
   static char response[HTTP_BUF_SIZE];
 
   int total = read_buffer(c2p[0], response);
   close(c2p[0]);
+
+  wait();
 
   strcpy(resp->response, response);
   resp->total_len = total;

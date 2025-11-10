@@ -13,7 +13,7 @@ static void strncpy(char *dst, const char *src, int n) {
     dst[i] = 0;
 }
 
-static void strtrim(char *s) {
+void strtrim(char *s) {
     int start = 0;
     while (s[start] == ' ' || s[start] == '\t') start++;
 

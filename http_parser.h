@@ -25,3 +25,4 @@ struct http_request {
 
 struct http_response* parse_http_response(const char *response);
 struct http_request* parse_http_request(const char *request);
+void strtrim(char *s);

@@ -182,6 +182,7 @@ UPROGS=\
 	_server\
 	_cgi\
 	_cgi_handler\
+	_cgi_file\
 	_cat\
 	_echo\
 	_forktest\
@@ -198,8 +199,8 @@ UPROGS=\
 	_wc\
 	_zombie\
 
-fs.img: mkfs README $(UPROGS)
-	./mkfs fs.img README $(UPROGS)
+fs.img: mkfs README main.html $(UPROGS)
+	./mkfs fs.img README main.html $(UPROGS)
 
 -include *.d
 
@@ -259,6 +260,8 @@ net:
 	sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 	sudo iptables -A FORWARD -i tap0 -j ACCEPT
 	sudo iptables -A FORWARD -o tap0 -m state --state ESTABLISHED,RELATED -j ACCEPT
+	sudo iptables -t nat -A PREROUTING -p tcp --dport 8080 -j DNAT --to-destination 10.0.2.15:8080
+	sudo iptables -A FORWARD -p tcp -d 10.0.2.15 --dport 8080 -j ACCEPT
 	sudo tcpdump -i tap0 -n -e -xx
 
 ping:
