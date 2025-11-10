@@ -4,7 +4,7 @@
 #include "http_parser.h"
 
 int main(int argc, char *argv[]) {
-    char req[HTTP_BUF_SIZE];
+    static char req[HTTP_BUF_SIZE];
 
     read_buffer(stdin, req);
 

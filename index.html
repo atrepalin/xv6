@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Архитектура HTTP-обработки xv6</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #fafafa;
+      color: #111;
+      margin: 2rem;
+      line-height: 1.6;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    h2 {
+      font-size: 1.1rem;
+      margin-top: 1.8rem;
+    }
+    ul, ol {
+      margin-left: 1.2rem;
+    }
+    .diagram {
+      margin-top: 1.5rem;
+      text-align: center;
+    }
+    svg {
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>Архитектура HTTP-обработки xv6</h1>
+
+  <h2>Компоненты</h2>
+  <ul>
+    <li><b>e1000</b> — драйвер сетевой карты, отправляет и получает Ethernet-кадры.</li>
+    <li><b>lwIP</b> — реализует ARP, IP, TCP; управляет соединениями, собирает пакеты и вызывает колбэки приложений.</li>
+    <li><b>kserver</b> — набор системных вызовов для работы HTTP-сервера и взаимодействия с CGI.</li>
+    <li><b>cgi</b> — обёртка, создающая дочерний процесс (fork), перенаправляющая stdin/stdout и вызывающая CGI-программу.</li>
+    <li><b>cgi_file</b> — конкретная CGI-программа, читающая HTTP-запрос и возвращающая HTML-ответ.</li>
+  </ul>
+
+  <h2>Последовательность запроса</h2>
+  <ol>
+    <li><b>e1000</b> получает Ethernet-кадр с TCP/IP-пакетом и передаёт его в <b>lwIP</b>.</li>
+    <li><b>lwIP</b> разбирает заголовки, собирает поток и вызывает <code>http_recv()</code> в <b>kserver</b>.</li>
+    <li><b>kserver</b> принимает HTTP-запрос и передаёт обработку через <b>cgi</b>.</li>
+    <li><b>cgi</b> форкает процесс, перенаправляет ввод/вывод и запускает <b>cgi_file</b>.</li>
+    <li><b>cgi_file</b> читает запрос, формирует HTML-ответ и пишет его в stdout.</li>
+    <li><b>cgi</b> получает вывод, возвращает его в <b>kserver</b>.</li>
+    <li><b>kserver</b> передаёт ответ через <b>lwIP</b> и <b>e1000</b> обратно клиенту.</li>
+  </ol>
+
+  <div class="diagram">
+    <svg viewBox="0 0 900 150" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0 0L8 4L0 8z" fill="#1e293b"/>
+        </marker>
+      </defs>
+
+      <rect x="20" y="30" width="120" height="40" rx="6" fill="#e0f2fe" stroke="#bae6fd"/>
+      <text x="55" y="55" font-size="12" fill="#111">e1000</text>
+
+      <rect x="170" y="30" width="120" height="40" rx="6" fill="#dcfce7" stroke="#bbf7d0"/>
+      <text x="205" y="55" font-size="12" fill="#111">lwIP</text>
+
+      <rect x="320" y="30" width="140" height="40" rx="6" fill="#fef9c3" stroke="#fde68a"/>
+      <text x="350" y="55" font-size="12" fill="#111">kserver</text>
+
+      <rect x="490" y="30" width="100" height="40" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+      <text x="520" y="55" font-size="12" fill="#111">cgi</text>
+
+      <rect x="620" y="70" width="160" height="40" rx="6" fill="#fee2e2" stroke="#fecaca"/>
+      <text x="650" y="95" font-size="12" fill="#111">cgi_file</text>
+
+      <rect x="20" y="100" width="120" height="40" rx="6" fill="#e0f2fe" stroke="#bae6fd"/>
+      <text x="55" y="125" font-size="12" fill="#111">e1000</text>
+
+      <rect x="170" y="100" width="120" height="40" rx="6" fill="#dcfce7" stroke="#bbf7d0"/>
+      <text x="205" y="125" font-size="12" fill="#111">lwIP</text>
+
+      <rect x="320" y="100" width="140" height="40" rx="6" fill="#fef9c3" stroke="#fde68a"/>
+      <text x="350" y="125" font-size="12" fill="#111">kserver</text>
+
+      <rect x="490" y="100" width="100" height="40" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+      <text x="520" y="125" font-size="12" fill="#111">cgi</text>
+
+      <line x1="140" y1="50" x2="170" y2="50" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)"/>
+      <line x1="290" y1="50" x2="320" y2="50" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)"/>
+      <line x1="460" y1="50" x2="490" y2="50" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)"/>
+      <line x1="590" y1="50" x2="620" y2="85" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)"/>
+
+      <line x1="620" y1="95" x2="590" y2="120" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)"/>
+      <line x1="490" y1="120" x2="460" y2="120" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)"/>
+      <line x1="320" y1="120" x2="290" y2="120" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)"/>
+      <line x1="170" y1="120" x2="140" y2="120" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)"/>
+    </svg>
+  </div>
+</body>
+</html>

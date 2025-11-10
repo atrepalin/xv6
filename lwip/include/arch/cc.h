@@ -20,9 +20,14 @@ extern void cprintf(char*, ...);
 #define PACK_STRUCT_BEGIN
 #define PACK_STRUCT_END
 
+#ifdef DEBUG
 #define LWIP_PLATFORM_DIAG(x) do { cprintf x; } while(0)
 #define LWIP_PLATFORM_ASSERT(x) do { cprintf("Assertion \"%s\" failed at line %d in %s\n", \
                                              x, __LINE__, __FILE__); panic("lwIP assert"); } while(0)
+#else
+#define LWIP_PLATFORM_DIAG(x)
+#define LWIP_PLATFORM_ASSERT(x)
+#endif
 
 #define BYTE_ORDER LITTLE_ENDIAN
 

@@ -4,8 +4,11 @@
 #include "http_parser.h"
 #include "fcntl.h"
 
+const char *filename = "index.html";
+const char *mimetype = "text/html";
+
 int main(int argc, char *argv[]) {
-    char req[HTTP_BUF_SIZE];
+    static char req[HTTP_BUF_SIZE];
     read_buffer(stdin, req);
 
     struct http_request *request = parse_http_request(req);
@@ -19,9 +22,36 @@ int main(int argc, char *argv[]) {
 
     printf(stderr, "Body:\n%s\n", request->body);
 
-    int fd = open("main.html", O_RDONLY);
+    if (strcmp(request->method, "GET") != 0) {
+        const char *err = "Method not allowed\n";
+        printf(stdout,
+            "HTTP/1.1 405 Method Not Allowed\r\n"
+            "Content-Type: text/plain\r\n"
+            "Content-Length: %d\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            "%s",
+            strlen(err), err);
+        exit();
+    }
+
+    if (strcmp(request->uri, "/") != 0) {
+        const char *err = "Not found\n";
+        printf(stdout,
+            "HTTP/1.1 404 Not Found\r\n"
+            "Content-Type: text/plain\r\n"
+            "Content-Length: %d\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            "%s",
+            strlen(err), err);
+        exit();
+    }
+
+    int fd = open(filename, O_RDONLY);
     if (fd < 0) {
-        const char *err = "Failed to open main.html\n";
+        const char err[64];
+        snprintf(err, sizeof(err), "Failed to open %s\n", filename);
         printf(stdout,
             "HTTP/1.1 500 Internal Server Error\r\n"
             "Content-Type: text/plain\r\n"
@@ -33,7 +63,7 @@ int main(int argc, char *argv[]) {
         exit();
     }
 
-    static char body[512];
+    static char body[HTTP_BUF_SIZE - 128];
     int n = read(fd, body, sizeof(body) - 1);
     close(fd);
 
@@ -43,12 +73,13 @@ int main(int argc, char *argv[]) {
 
     printf(stdout,
         "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html\r\n"
+        "Content-Type: %s\r\n"
         "Content-Length: %d\r\n"
+        "Content-Disposition: inline; filename=\"%s\"\r\n"
         "Connection: close\r\n"
         "\r\n"
         "%s",
-        n, body);
+        mimetype, n, filename, body);
 
     exit();
 }

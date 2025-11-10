@@ -102,6 +102,8 @@ found:
   sp -= sizeof *p->tf;
   p->tf = (struct trapframe*)sp;
 
+  p->rq = 0;
+
   // Set up new context to start executing at forkret,
   // which returns to trapret.
   sp -= 4;
@@ -221,6 +223,8 @@ fork(void)
   return pid;
 }
 
+extern void httpd_stop();
+
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
@@ -241,6 +245,8 @@ exit(void)
       curproc->ofile[fd] = 0;
     }
   }
+
+  httpd_stop();
 
   begin_op();
   iput(curproc->cwd);

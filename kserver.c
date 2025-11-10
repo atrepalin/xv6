@@ -14,8 +14,61 @@
 #include "kserver.h"
 #include "e1000.h"
 
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
+#define CHUNK_SIZE TCP_MSS
+
+struct connection_state {
+    char* data;
+    char* start;
+    size_t len;
+    size_t to_send;
+};
+
+static err_t
+send_data(struct tcp_pcb *tpcb, struct connection_state *state)
+{
+    err_t err;
+
+    while (state->len > 0) {
+        u16_t chunk = min(state->len, CHUNK_SIZE);
+
+        if (chunk == 0) {
+            return ERR_MEM;
+        }
+
+        err = tcp_write(tpcb, state->data, chunk, TCP_WRITE_FLAG_COPY);
+
+        if (err != ERR_OK) {
+            return err;
+        }
+
+        state->data += chunk;
+        state->len -= chunk;
+    }
+
+    tcp_output(tpcb);
+    return ERR_OK;
+}
+
 static err_t http_sent(void *arg, struct tcp_pcb *tpcb, u16_t len) {
-    tcp_close(tpcb);
+    struct connection_state *s = arg;
+
+    s->to_send -= len;
+
+    if (s->to_send <= 0) {
+        kfree_nsize(s->start, HTTP_BUF_SIZE);
+        kmfree(s);
+
+        tcp_close(tpcb);
+
+        return ERR_OK;
+    }
+
+    if (s->len > 0) {
+        send_data(tpcb, s);
+    }
+
     return ERR_OK;
 }
 
@@ -65,9 +118,9 @@ static err_t http_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
 
     tcp_recved(tpcb, p->len);
 
-    acquire(&proc->rq.lock);
+    acquire(&proc->rq->lock);
 
-    struct incoming_http_request *req = &proc->rq.requests[proc->rq.tail];
+    struct incoming_http_request *req = &proc->rq->requests[proc->rq->tail];
 
     if (!req->used) {
         req->pcb = (uint32_t)tpcb;
@@ -119,19 +172,26 @@ static err_t http_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
     }
 
     if (ready) {
-        int next = (proc->rq.tail + 1) % MSG_QUEUE_SIZE;
-        if (next != proc->rq.head)
-            proc->rq.tail = next;
+        int next = (proc->rq->tail + 1) % MSG_QUEUE_SIZE;
+        if (next != proc->rq->head)
+            proc->rq->tail = next;
 
         wakeup_on_msg(proc);
     }
 
-    release(&proc->rq.lock);
+    release(&proc->rq->lock);
     pbuf_free(p);
     return ERR_OK;
 }
 
 static err_t http_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
+    struct proc *proc = (struct proc*)arg;
+
+    struct http_conn *conn = kmalloc(sizeof(struct http_conn));
+    conn->pcb = newpcb;
+    conn->next = proc->rq->conns;
+    proc->rq->conns = conn;
+
     tcp_arg(newpcb, arg);
     tcp_recv(newpcb, http_recv);
     tcp_sent(newpcb, http_sent);
@@ -147,7 +207,7 @@ sys_httpd_init(void) {
     struct tcp_pcb *pcb = tcp_new();
     if (!pcb) ERR_UNKNOWN;
 
-    int error;
+    err_t err;
 
     struct ip4_addr ipaddr;
     uint8_t ip[4];
@@ -155,20 +215,63 @@ sys_httpd_init(void) {
 
     IP4_ADDR(&ipaddr, ip[0], ip[1], ip[2], ip[3]);
 
-    if ((error = tcp_bind(pcb, &ipaddr, port)) != ERR_OK) {
-        return error;
+    if ((err = tcp_bind(pcb, &ipaddr, port)) != ERR_OK) {
+        return err;
     }
 
     struct proc *p = myproc();
-    p->rq.head = p->rq.tail = 0;
 
-    initlock(&p->rq.lock, "httpd");
+    p->rq = kalloc_nsize(sizeof(struct request_queue));
+
+    memset(p->rq, 0, sizeof(struct request_queue));
+
+    p->rq->head = p->rq->tail = 0;
+
+    initlock(&p->rq->lock, "httpd");
 
     tcp_arg(pcb, p);
     pcb = tcp_listen(pcb);
     tcp_accept(pcb, http_accept);
 
+    p->rq->pcb = pcb;
+
     return ERR_OK;
+}
+
+void http_close_conn(struct http_conn *conn) {
+    if (!conn || !conn->pcb)
+        return;
+
+    tcp_arg(conn->pcb, 0);
+    tcp_recv(conn->pcb, 0);
+    tcp_sent(conn->pcb, 0);
+
+    tcp_close(conn->pcb);
+
+    kmfree(conn);
+}
+
+void
+httpd_stop(void) {
+    struct proc *p = myproc();
+
+    if (p->rq != 0) {
+        struct http_conn *c = p->rq->conns;
+        while (c) {
+            struct http_conn *next = c->next;
+            http_close_conn(c);
+            c = next;
+        }
+
+        tcp_close(p->rq->pcb);
+
+        if (holding(&p->rq->lock)) {
+            release(&p->rq->lock);
+        }
+        
+        kfree_nsize(p->rq, sizeof(struct request_queue));
+        p->rq = 0;
+    }
 }
 
 int
@@ -183,8 +286,14 @@ sys_httpd_send(void) {
 
     struct tcp_pcb *tpcb = (struct tcp_pcb*)pcb;
 
-    tcp_write(tpcb, body, len, TCP_WRITE_FLAG_COPY);
-    tcp_output(tpcb);
+    struct connection_state *state = kmalloc(sizeof(struct connection_state));
+        
+    state->start = state->data = kalloc_nsize(HTTP_BUF_SIZE);
+    strncpy(state->data, body, len);
+    state->to_send = state->len = len;
+
+    tcp_arg(tpcb, state);
+    send_data(tpcb, state);
 
     return ERR_OK;
 }
@@ -199,18 +308,18 @@ sys_httpd_recv(void) {
 
     struct proc *p = myproc();
 
-    acquire(&p->rq.lock);
+    acquire(&p->rq->lock);
     
-    if (p->rq.head == p->rq.tail) {
-        release(&p->rq.lock);
+    if (p->rq->head == p->rq->tail) {
+        release(&p->rq->lock);
         wait_for_msg(p);
-        acquire(&p->rq.lock);
+        acquire(&p->rq->lock);
     }
 
-    req = &p->rq.requests[p->rq.head];
-    p->rq.head = (p->rq.head + 1) % MSG_QUEUE_SIZE;
+    req = &p->rq->requests[p->rq->head];
+    p->rq->head = (p->rq->head + 1) % MSG_QUEUE_SIZE;
 
-    release(&p->rq.lock);
+    release(&p->rq->lock);
 
     if (copyout(p->pgdir, (uint)request, req, sizeof(struct incoming_http_request)) < 0)
         return ERR_UNKNOWN;

@@ -69,8 +69,12 @@ void            kmfree(void *ptr);
 void            kminit(void);
 
 // kalloc.c
-char*           kalloc(void);
-void            kfree(char*);
+void*           kalloc(void);
+void            kfree(void*);
+void*           kalloc_npages(int);
+void            kfree_npages(void*, int);
+void*           kalloc_nsize(int);
+void            kfree_nsize(void*, int);
 void            kinit1(void*, void*);
 void            kinit2(void*, void*);
 

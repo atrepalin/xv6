@@ -1,6 +1,4 @@
-// Physical memory allocator, intended to allocate
-// memory for user processes, kernel stacks, page table pages,
-// and pipe buffers. Allocates 4096-byte pages.
+// Physical memory allocator
 
 #include "types.h"
 #include "defs.h"
@@ -10,11 +8,11 @@
 #include "spinlock.h"
 
 void freerange(void *vstart, void *vend);
-extern char end[]; // first address after kernel loaded from ELF file
-                   // defined by the kernel linker script in kernel.ld
+extern char end[]; // defined in kernel.ld
 
 struct run {
   struct run *next;
+  int npages;
 };
 
 struct {
@@ -43,54 +41,147 @@ kinit2(void *vstart, void *vend)
   kmem.use_lock = 1;
 }
 
+static void
+insert_and_coalesce(struct run *r)
+{
+  struct run **pp = &kmem.freelist;
+  char *rbase = (char*)r;
+  uint rsize = r->npages * PGSIZE;
+
+  while (*pp && (char*)(*pp) < rbase) {
+    pp = &(*pp)->next;
+  }
+
+  if (*pp) {
+    struct run *next = *pp;
+    char *nextbase = (char*)next;
+    if (rbase + rsize == nextbase) {
+      r->npages += next->npages;
+      r->next = next->next;
+      *pp = r;
+    } else {
+      r->next = next;
+      *pp = r;
+    }
+  } else {
+    r->next = 0;
+    *pp = r;
+  }
+
+  struct run *prev = 0;
+  struct run *cur = kmem.freelist;
+  while (cur && cur->next && cur->next != r)
+    cur = cur->next;
+  if (cur && cur->next == r)
+    prev = cur;
+
+  if (prev) {
+    char *prevbase = (char*)prev;
+    uint prevsize = prev->npages * PGSIZE;
+    if (prevbase + prevsize == (char*)r) {
+      prev->npages += r->npages;
+      prev->next = r->next;
+    }
+  }
+}
+
 void
 freerange(void *vstart, void *vend)
 {
-  char *p;
-  p = (char*)PGROUNDUP((uint)vstart);
-  for(; p + PGSIZE <= (char*)vend; p += PGSIZE)
-    kfree(p);
+  char *p = (char*)PGROUNDUP((uint)vstart);
+  if (p >= (char*)vend) return;
+
+  int np = ((char*)vend - p) / PGSIZE;
+  if (np <= 0) return;
+
+  struct run *r = (struct run*)p;
+  r->npages = np;
+
+  if (kmem.use_lock)
+    acquire(&kmem.lock);
+  if (!kmem.freelist) {
+    r->next = 0;
+    kmem.freelist = r;
+  } else {
+    insert_and_coalesce(r);
+  }
+  if (kmem.use_lock)
+    release(&kmem.lock);
 }
-//PAGEBREAK: 21
-// Free the page of physical memory pointed at by v,
-// which normally should have been returned by a
-// call to kalloc().  (The exception is when
-// initializing the allocator; see kinit above.)
+
 void
-kfree(char *v)
+kfree_npages(void *v, int n)
 {
   struct run *r;
 
-  if((uint)v % PGSIZE || v < end || V2P(v) >= PHYSTOP)
+  if((uint)v % PGSIZE || (char *)v < end || V2P(v) >= PHYSTOP)
     panic("kfree");
 
-  // Fill with junk to catch dangling refs.
   memset(v, 1, PGSIZE);
 
+  r = (struct run*)v;
+  r->npages = n;
+
   if(kmem.use_lock)
     acquire(&kmem.lock);
-  r = (struct run*)v;
-  r->next = kmem.freelist;
-  kmem.freelist = r;
+  insert_and_coalesce(r);
   if(kmem.use_lock)
     release(&kmem.lock);
 }
 
-// Allocate one 4096-byte page of physical memory.
-// Returns a pointer that the kernel can use.
-// Returns 0 if the memory cannot be allocated.
-char*
+void 
+kfree(void *v) {
+  kfree_npages(v, 1);
+}
+
+void*
+kalloc_nsize(int n) {
+  return kalloc_npages((n + PGSIZE - 1) / PGSIZE);
+}
+
+void 
+kfree_nsize(void *v, int n) {
+  kfree_npages(v, (n + PGSIZE - 1) / PGSIZE);
+}
+
+void*
+kalloc_npages(int n)
+{
+  if (n <= 0)
+    return 0;
+
+  if(kmem.use_lock)
+    acquire(&kmem.lock);
+
+  struct run **pp = &kmem.freelist;
+  struct run *r = kmem.freelist;
+  while (r) {
+    if (r->npages >= n) {
+      if (r->npages == n) {
+        *pp = r->next;
+        if(kmem.use_lock)
+          release(&kmem.lock);
+        return (void*)r;
+      } else {
+        int remaining = r->npages - n;
+        char *alloc_base = (char*)r + remaining * PGSIZE;
+        r->npages = remaining;
+        if(kmem.use_lock)
+          release(&kmem.lock);
+        return (void*)alloc_base;
+      }
+    }
+    pp = &r->next;
+    r = r->next;
+  }
+
+  if(kmem.use_lock)
+    release(&kmem.lock);
+  return 0;
+}
+
+void*
 kalloc(void)
 {
-  struct run *r;
-
-  if(kmem.use_lock)
-    acquire(&kmem.lock);
-  r = kmem.freelist;
-  if(r)
-    kmem.freelist = r->next;
-  if(kmem.use_lock)
-    release(&kmem.lock);
-  return (char*)r;
+  return (char*)kalloc_npages(1);
 }
-
