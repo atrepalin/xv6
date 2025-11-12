@@ -173,7 +173,7 @@ int sys_curl() {
 
     capitalize(method);
 
-    struct http_ctx *ctx = (struct http_ctx*)kalloc();
+    struct http_ctx *ctx = kalloc_nsize(sizeof(struct http_ctx));
     if (!ctx) return ERR_UNKNOWN;
 
     struct proc *p = myproc();
@@ -247,6 +247,6 @@ int sys_curl() {
         return ERR_UNKNOWN;
 
     int error = ctx->error;
-    kfree((char *)ctx);
+    kfree_nsize(ctx, sizeof(struct http_ctx));
     return error;
 }
